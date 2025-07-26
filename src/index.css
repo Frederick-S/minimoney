@@ -1,70 +1,50 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
 
 @layer base {
   * {
-    @apply border-border;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
   
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-feature-settings: 'tnum' 1;
+    font-family: 'Roboto', 'Material Icons', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+    background: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-background);
   }
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.2 0 0);
-
-  --card: oklch(0.98 0 0);
-  --card-foreground: oklch(0.2 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0 0);
-
-  --primary: oklch(0.45 0.12 180);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.65 0.08 170);
-  --secondary-foreground: oklch(0.2 0 0);
-  --accent: oklch(0.7 0.15 50);
-  --accent-foreground: oklch(1 0 0);
-
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --destructive: oklch(0.65 0.2 20);
-  --destructive-foreground: oklch(1 0 0);
-
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.45 0.12 180);
-
-  --radius: 0.75rem;
-}
-
-@theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  --radius-sm: calc(var(--radius) * 0.5);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) * 1.5);
-  --radius-xl: calc(var(--radius) * 2);
-  --radius-2xl: calc(var(--radius) * 3);
-  --radius-full: 9999px;
+  /* Material Design 3 Color System */
+  --md-sys-color-primary: #1976d2;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #e3f2fd;
+  --md-sys-color-on-primary-container: #0d47a1;
+  
+  --md-sys-color-secondary: #42a5f5;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #e1f5fe;
+  --md-sys-color-on-secondary-container: #01579b;
+  
+  --md-sys-color-surface: #ffffff;
+  --md-sys-color-on-surface: #1c1b1f;
+  --md-sys-color-surface-variant: #f5f5f5;
+  --md-sys-color-on-surface-variant: #49454f;
+  
+  --md-sys-color-background: #fefbff;
+  --md-sys-color-on-background: #1c1b1f;
+  
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+  
+  --md-sys-color-outline: #79747e;
+  --md-sys-color-outline-variant: #cac4d0;
+  
+  /* Elevation shadows */
+  --md-sys-elevation-1: 0px 2px 4px rgba(0, 0, 0, 0.14);
+  --md-sys-elevation-2: 0px 4px 8px rgba(0, 0, 0, 0.14);
+  --md-sys-elevation-3: 0px 8px 16px rgba(0, 0, 0, 0.14);
 }
