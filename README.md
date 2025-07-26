@@ -1,23 +1,86 @@
-# ✨ Welcome to Your Spark Template!
-You've just launched your brand-new Spark Template Codespace — everything’s fired up and ready for you to explore, build, and create with Spark!
+# 记账 (Vue Expense Tracker)
 
-This template is your blank canvas. It comes with a minimal setup to help you get started quickly with Spark development.
+A modern, secure expense tracking application built with Vue 3, Vuetify (Material Design), and Supabase authentication.
 
-🚀 What's Inside?
-- A clean, minimal Spark environment
-- Pre-configured for local development
-- Ready to scale with your ideas
-  
-🧠 What Can You Do?
+## ✨ Features
 
-Right now, this is just a starting point — the perfect place to begin building and testing your Spark applications.
+- 🔐 **Secure Authentication** - Email/password login with Supabase Auth
+- 💰 **Easy Expense Entry** - Quick expense recording with categories and notes
+- 📊 **Visual Charts** - Monthly/yearly expense analysis with category breakdowns
+- 📱 **Mobile-First Design** - Optimized for iPhone and mobile devices
+- 🎨 **Material Design** - Beautiful, intuitive interface with Vuetify 3
+- ☁️ **Cloud Sync** - Secure data storage with Supabase
+- 🔒 **Data Privacy** - Row-level security ensures your data stays private
 
-🧹 Just Exploring?
-No problem! If you were just checking things out and don’t need to keep this code:
+## 🚀 Quick Start
 
-- Simply delete your Spark.
-- Everything will be cleaned up — no traces left behind.
+### Prerequisites
 
-📄 License For Spark Template Resources 
+1. **Supabase Account** - Sign up at [supabase.com](https://supabase.com)
+2. **Node.js** - Version 18+ recommended
 
-The Spark Template files and resources from GitHub are licensed under the terms of the MIT license, Copyright GitHub, Inc.
+### Setup
+
+1. **Configure Supabase**
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+   
+   # Edit .env with your Supabase credentials
+   # Get these from your Supabase dashboard
+   ```
+
+2. **Create Database Schema**
+   - Open your Supabase dashboard
+   - Go to SQL Editor
+   - Run the contents of `supabase-schema.sql`
+
+3. **Install & Run**
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+4. **Start Tracking!**
+   - Register with your email
+   - Confirm your email address
+   - Start tracking expenses
+
+## 🛠️ Tech Stack
+
+- **Framework**: Vue 3 with Composition API
+- **UI Library**: Vuetify 3 (Material Design)
+- **Backend**: Supabase (Auth + Database)
+- **Build Tool**: Vite
+- **Charts**: Chart.js with vue-chartjs
+- **Icons**: Material Design Icons
+
+## 📋 Setup Details
+
+For detailed setup instructions, see [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
+
+## 🏗️ Architecture
+
+- **Authentication**: Supabase Auth with Row Level Security
+- **Database**: PostgreSQL with user-isolated expense data
+- **Frontend**: Vue 3 Composition API with TypeScript
+- **Styling**: Vuetify 3 Material Design components
+- **Charts**: Chart.js for expense visualization
+
+## 🔒 Security
+
+- User authentication required for all data access
+- Row Level Security ensures data isolation
+- Environment variables for sensitive configuration
+- No user data stored locally
+
+## 📱 Mobile Optimization
+
+- Responsive Material Design interface
+- Touch-friendly interactions
+- Optimized for iPhone 12 mini and similar devices
+- Bottom navigation for easy thumb access
+
+## 📄 License
+
+MIT License - see LICENSE file for details
