@@ -339,7 +339,9 @@ import {
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  DoughnutController,
+  LineController
 } from 'chart.js'
 
 // Register Chart.js components
@@ -352,7 +354,9 @@ Chart.register(
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  DoughnutController,
+  LineController
 )
 
 interface Expense {
