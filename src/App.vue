@@ -54,6 +54,9 @@
                   <p class="text-lg font-semibold text-foreground">
                     {{ formatAmount(expense.amount) }}
                   </p>
+                  <p v-if="expense.note" class="text-sm text-muted-foreground mt-1">
+                    {{ expense.note }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -105,6 +108,16 @@
                 <option value="Other">其他</option>
               </select>
             </div>
+            
+            <div class="space-y-2">
+              <label class="text-base font-medium">备注</label>
+              <textarea 
+                v-model="note"
+                class="w-full border border-input rounded-md px-3 py-2 bg-background resize-none"
+                placeholder="添加备注信息..."
+                rows="3"
+              ></textarea>
+            </div>
           </div>
 
           <div class="flex gap-3 pt-6">
@@ -136,12 +149,14 @@ interface Expense {
   amount: number
   category: string
   date: string
+  note?: string
 }
 
 const [expenses, setExpenses] = useKV<Expense[]>("expenses", [])
 const showForm = ref(false)
 const amount = ref('')
 const category = ref('Food')
+const note = ref('')
 
 const saveExpense = () => {
   if (!amount.value) return
@@ -150,13 +165,15 @@ const saveExpense = () => {
     id: Date.now().toString(),
     amount: parseFloat(amount.value),
     category: category.value,
-    date: new Date().toISOString()
+    date: new Date().toISOString(),
+    note: note.value.trim() || undefined
   }
   
   setExpenses((currentExpenses: Expense[]) => [newExpense, ...currentExpenses])
   
   showForm.value = false
   amount.value = ''
+  note.value = ''
 }
 
 const todayTotal = computed(() => {
