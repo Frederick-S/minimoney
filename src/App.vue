@@ -770,4 +770,4 @@ const getCategoryColor = (category: string) => {
   }
   return colors[category] || 'grey'
 }
-</script>
+</script></script>
