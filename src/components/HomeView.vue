@@ -1,26 +1,33 @@
 <template>
   <div class="px-4">
-    <TodaySummary :expenses="expenses" />
-    <ExpenseList :expenses="expenses" @edit="handleEditExpense" />
-    
-    <!-- Load More Button -->
-    <div v-if="hasMoreExpenses" class="text-center py-4">
-      <v-btn
-        icon
-        variant="outlined"
-        color="primary"
-        :loading="loadingMore"
-        @click="loadMoreExpenses"
-        size="large"
-      >
-        <v-icon>mdi-chevron-down</v-icon>
-      </v-btn>
+    <!-- Loading State for Initial Load -->
+    <div v-if="initialLoading" class="d-flex justify-center align-center py-8">
+      <v-progress-circular indeterminate size="64" />
     </div>
     
-    <!-- No More Data Message -->
-    <div v-else-if="expenses.length > 0" class="text-center py-4">
-      <span class="text-grey-darken-1">已加载全部</span>
-    </div>
+    <template v-else>
+      <TodaySummary :expenses="expenses" />
+      <ExpenseList :expenses="expenses" @edit="handleEditExpense" />
+      
+      <!-- Load More Button -->
+      <div v-if="hasMoreExpenses" class="text-center py-4">
+        <v-btn
+          icon
+          variant="outlined"
+          color="primary"
+          :loading="loadingMore"
+          @click="loadMoreExpenses"
+          size="large"
+        >
+          <v-icon>mdi-chevron-down</v-icon>
+        </v-btn>
+      </div>
+      
+      <!-- No More Data Message -->
+      <div v-else-if="expenses.length > 0" class="text-center py-4">
+        <span class="text-grey-darken-1">已加载全部</span>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -43,6 +50,7 @@ const currentPage = ref(0)
 const pageSize = 5
 const hasMoreExpenses = ref(true)
 const loadingMore = ref(false)
+const initialLoading = ref(true)
 
 // Load expenses from Supabase with pagination
 const loadExpenses = async (reset = false) => {
@@ -81,6 +89,11 @@ const loadExpenses = async (reset = false) => {
       hasMoreExpenses.value = false
     }
   }
+  
+  // Set initial loading to false after first load
+  if (reset) {
+    initialLoading.value = false
+  }
 }
 
 // Load more expenses
@@ -101,6 +114,8 @@ const handleEditExpense = (expense: Expense) => {
 onMounted(async () => {
   if (user.value) {
     await loadExpenses(true)
+  } else {
+    initialLoading.value = false
   }
 })
 
@@ -108,6 +123,7 @@ onMounted(async () => {
 watch(user, async (newUser, oldUser) => {
   if (newUser && !oldUser) {
     // User just logged in, reset pagination and load their expenses
+    initialLoading.value = true
     currentPage.value = 0
     hasMoreExpenses.value = true
     await loadExpenses(true)
@@ -116,6 +132,7 @@ watch(user, async (newUser, oldUser) => {
     expenses.value = []
     currentPage.value = 0
     hasMoreExpenses.value = true
+    initialLoading.value = false
   }
 })
 
