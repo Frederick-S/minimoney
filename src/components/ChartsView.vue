@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="px-4">
     <!-- Time Period Filter -->
     <PeriodFilter
       :expenses="expenses"
@@ -44,9 +44,14 @@ import CategoryDetails from './charts/CategoryDetails.vue'
 import PeriodFilter from './charts/PeriodFilter.vue'
 import SummaryStats from './charts/SummaryStats.vue'
 import EmptyState from './charts/EmptyState.vue'
-import { type Expense, type ExpenseListProps } from '../types'
+import { type Expense, type ChartProps } from '../types'
 
-const props = defineProps<ExpenseListProps>()
+const props = withDefaults(defineProps<{ allExpenses?: Expense[] }>(), {
+  allExpenses: () => []
+})
+
+// Use allExpenses prop instead of expenses
+const expenses = computed(() => props.allExpenses)
 
 const selectedPeriodType = ref<'month' | 'year'>('month')
 const selectedMonth = ref('')
@@ -64,14 +69,14 @@ const periodExpenses = computed(() => {
   if (selectedPeriodType.value === 'month') {
     if (!selectedMonth.value) return []
     const [year, month] = selectedMonth.value.split('-')
-    return props.expenses.filter(expense => {
+    return expenses.value.filter(expense => {
       const expenseDate = new Date(expense.date)
       return expenseDate.getFullYear() === parseInt(year) && 
              expenseDate.getMonth() === parseInt(month) - 1
     })
   } else {
     if (!selectedYear.value) return []
-    return props.expenses.filter(expense => {
+    return expenses.value.filter(expense => {
       const expenseDate = new Date(expense.date)
       return expenseDate.getFullYear() === parseInt(selectedYear.value)
     })

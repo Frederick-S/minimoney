@@ -16,23 +16,15 @@
 
         <!-- Main Content Area -->
         <div class="content-area">
-          <!-- Home Tab Content -->
-          <div v-if="activeTab === 'home'">
-            <HomeView 
-              :refresh-trigger="refreshTrigger"
-              @edit="handleEditExpense" 
-              ref="homeViewRef"
-            />
-          </div>
-
-          <!-- Charts Tab Content -->
-          <div v-if="activeTab === 'charts'" class="px-4">
-            <ChartsView :expenses="allExpenses" />
-          </div>
+          <router-view 
+            :refresh-trigger="refreshTrigger"
+            :all-expenses="allExpenses"
+            @edit="handleEditExpense"
+          />
         </div>
 
         <!-- Floating Action Button (only show on home tab) -->
-        <div v-if="activeTab === 'home'" class="fixed-fab">
+        <div v-if="$route.name === 'Home'" class="fixed-fab">
           <v-fab
             location="bottom center"
             size="56"
@@ -43,7 +35,7 @@
         </div>
 
         <!-- Bottom Navigation -->
-        <BottomNavigation v-model="activeTab" />
+        <BottomNavigation />
 
         <!-- Expense Form Dialog -->
         <ExpenseForm 
@@ -65,16 +57,13 @@ import { ref, onMounted } from 'vue'
 import { useSupabase } from './composables/useSupabase'
 import AppHeader from './components/AppHeader.vue'
 import Auth from './components/Auth.vue'
-import HomeView from './components/HomeView.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
-import ChartsView from './components/ChartsView.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
 import { type Expense } from './types'
 
 const { user, loading, signOut, initAuth, supabase } = useSupabase()
 
-const activeTab = ref('home')
 const showForm = ref(false)
 const showPasswordChange = ref(false)
 const editingExpense = ref<Expense | null>(null)

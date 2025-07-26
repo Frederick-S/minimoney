@@ -31,7 +31,9 @@ import TodaySummary from './TodaySummary.vue'
 import ExpenseList from './ExpenseList.vue'
 import { type Expense, type HomeViewProps, type HomeViewEmits } from '../types'
 
-const props = defineProps<HomeViewProps>()
+const props = withDefaults(defineProps<HomeViewProps>(), {
+  refreshTrigger: 0
+})
 const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
