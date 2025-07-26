@@ -1,6 +1,6 @@
-# 记账 (Expense Tracker) - Product Requirements Document
+# 记账 (Vue Expense Tracker) - Product Requirements Document
 
-A minimalist mobile-first expense tracking application that helps users monitor their daily spending with beautiful, intuitive interactions.
+A minimalist mobile-first expense tracking application built with Vue 3 that helps users monitor their daily spending with beautiful, intuitive interactions.
 
 **Experience Qualities**:
 1. **Effortless** - Recording expenses should take seconds, not minutes
@@ -10,7 +10,8 @@ A minimalist mobile-first expense tracking application that helps users monitor 
 **Complexity Level**: Light Application (multiple features with basic state)
 - Core functionality focuses on expense entry, categorization, and basic reporting
 - Persistent data storage without requiring user accounts
-- Mobile-optimized interface with material design principles
+- Mobile-optimized interface built with Vue 3 and Composition API
+- Material design-inspired components with Tailwind CSS styling
 
 ## Essential Features
 
@@ -98,3 +99,25 @@ Subtle material-inspired motion that reinforces the physical metaphor of handlin
 - **Icon Selection**: Phosphor icons for their clarity at small sizes - Plus for add, Wallet for categories, Calendar for dates
 - **Spacing**: Consistent 16px base unit (4 in Tailwind) with 8px (2) for tight spacing, 24px (6) for generous spacing
 - **Mobile**: Single column layout, large touch targets, bottom sheet for forms, sticky FAB positioning
+
+## Technical Architecture
+
+**Framework**: Vue 3 with Composition API
+- **Reactivity**: Vue 3 reactivity system for component state management
+- **Components**: Vue Single File Components (.vue) with TypeScript support
+- **State Management**: Vue refs and computed properties for local state, custom useKV hook for persistence
+
+**UI Components**: Custom Vue components inspired by shadcn/ui
+- **Styling**: Tailwind CSS with custom CSS variables for theming
+- **Design System**: Consistent component library built for Vue 3
+- **Icons**: Phosphor Icons React (compatible with Vue)
+
+**Data Persistence**: 
+- **Local Storage**: Custom useKV composable wrapping spark.kv API
+- **Type Safety**: Full TypeScript support with interface definitions
+- **Reactive Updates**: Automatic UI updates when data changes
+
+**Build System**:
+- **Vite**: Fast development server and build tool optimized for Vue
+- **TypeScript**: Full type checking with Vue-specific type definitions
+- **Hot Module Replacement**: Instant updates during development

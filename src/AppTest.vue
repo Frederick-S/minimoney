@@ -1,0 +1,1 @@
+// Cleaned up - see App.vue for main implementation
