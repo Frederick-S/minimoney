@@ -62,29 +62,7 @@ interface Expense {
 
 const activeTab = ref('home')
 const showForm = ref(false)
-const expenses = ref<Expense[]>([
-  {
-    id: '1',
-    amount: 25.50,
-    category: '餐饮',
-    date: '2024-01-15',
-    note: '午餐 - 麦当劳'
-  },
-  {
-    id: '2', 
-    amount: 120.00,
-    category: '交通',
-    date: '2024-01-15',
-    note: '地铁月卡'
-  },
-  {
-    id: '3',
-    amount: 68.90,
-    category: '购物',
-    date: '2024-01-14',
-    note: '日用品采购'
-  }
-])
+const expenses = ref<Expense[]>([])
 
 const saveExpense = (expense: Omit<Expense, 'id'>) => {
   const newExpense: Expense = {
