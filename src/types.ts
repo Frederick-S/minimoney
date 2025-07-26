@@ -146,3 +146,17 @@ export interface SummaryStatsProps {
   count: number
   periodLabel: string
 }
+
+/**
+ * Props for home view component
+ */
+export interface HomeViewProps {
+  refreshTrigger?: number
+}
+
+/**
+ * Emits for home view component
+ */
+export interface HomeViewEmits {
+  (e: 'edit', expense: Expense): void
+}

@@ -17,33 +17,17 @@
         <!-- Main Content Area -->
         <div class="content-area">
           <!-- Home Tab Content -->
-          <div v-if="activeTab === 'home'" class="px-4">
-            <TodaySummary :expenses="expenses" />
-            <ExpenseList :expenses="expenses" @edit="handleEditExpense" />
-            
-            <!-- Load More Button -->
-            <div v-if="hasMoreExpenses" class="text-center py-4">
-              <v-btn
-                icon
-                variant="outlined"
-                color="primary"
-                :loading="loadingMore"
-                @click="loadMoreExpenses"
-                size="large"
-              >
-                <v-icon>mdi-chevron-down</v-icon>
-              </v-btn>
-            </div>
-            
-            <!-- No More Data Message -->
-            <div v-else-if="expenses.length > 0" class="text-center py-4">
-              <span class="text-grey-darken-1">已加载全部</span>
-            </div>
+          <div v-if="activeTab === 'home'">
+            <HomeView 
+              :refresh-trigger="refreshTrigger"
+              @edit="handleEditExpense" 
+              ref="homeViewRef"
+            />
           </div>
 
           <!-- Charts Tab Content -->
           <div v-if="activeTab === 'charts'" class="px-4">
-            <ChartsView :expenses="expenses" />
+            <ChartsView :expenses="allExpenses" />
           </div>
         </div>
 
@@ -77,13 +61,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useSupabase } from './composables/useSupabase'
 import AppHeader from './components/AppHeader.vue'
 import Auth from './components/Auth.vue'
-import TodaySummary from './components/TodaySummary.vue'
+import HomeView from './components/HomeView.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
-import ExpenseList from './components/ExpenseList.vue'
 import ChartsView from './components/ChartsView.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
@@ -95,81 +78,35 @@ const activeTab = ref('home')
 const showForm = ref(false)
 const showPasswordChange = ref(false)
 const editingExpense = ref<Expense | null>(null)
-const expenses = ref<Expense[]>([])
-const currentPage = ref(0)
-const pageSize = 5
-const hasMoreExpenses = ref(true)
-const loadingMore = ref(false)
+const homeViewRef = ref()
+const refreshTrigger = ref(0)
+
+// Get all expenses for charts (we'll need to load all for charts)
+const allExpenses = ref<Expense[]>([])
 
 // Initialize auth on app load
 onMounted(async () => {
   await initAuth()
   if (user.value) {
-    await loadExpenses(true)
+    await loadAllExpenses()
   }
 })
 
-// Watch for user authentication changes
-watch(user, async (newUser, oldUser) => {
-  if (newUser && !oldUser) {
-    // User just logged in, reset pagination and load their expenses
-    currentPage.value = 0
-    hasMoreExpenses.value = true
-    await loadExpenses(true)
-  } else if (!newUser && oldUser) {
-    // User just logged out, clear expenses and reset pagination
-    expenses.value = []
-    currentPage.value = 0
-    hasMoreExpenses.value = true
-  }
-})
-
-// Load expenses from Supabase with pagination
-const loadExpenses = async (reset = false) => {
+// Load all expenses for charts view
+const loadAllExpenses = async () => {
   if (!user.value) return
 
-  if (reset) {
-    expenses.value = []
-    currentPage.value = 0
-    hasMoreExpenses.value = true
-  }
-
-  if (!hasMoreExpenses.value && !reset) return
-
-  const pageToLoad = reset ? 0 : currentPage.value
-  
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
     .eq('user_id', user.value.id)
     .order('created_at', { ascending: false })
-    .range(pageToLoad * pageSize, (pageToLoad + 1) * pageSize - 1)
 
   if (error) {
-    console.error('Error loading expenses:', error)
+    console.error('Error loading all expenses:', error)
   } else {
-    if (reset) {
-      expenses.value = data || []
-      currentPage.value = 1 // Set to 1 since we loaded page 0
-    } else {
-      expenses.value = [...expenses.value, ...(data || [])]
-      currentPage.value++ // Increment for next load
-    }
-    
-    // Check if we have more data to load
-    if (!data || data.length < pageSize) {
-      hasMoreExpenses.value = false
-    }
+    allExpenses.value = data || []
   }
-}
-
-// Load more expenses
-const loadMoreExpenses = async () => {
-  if (loadingMore.value || !hasMoreExpenses.value) return
-  
-  loadingMore.value = true
-  await loadExpenses()
-  loadingMore.value = false
 }
 
 // Save expense to Supabase
@@ -190,7 +127,9 @@ const saveExpense = async (expense: Omit<Expense, 'id'>) => {
   if (error) {
     console.error('Error saving expense:', error)
   } else {
-    expenses.value.unshift(data)
+    // Refresh both views
+    refreshTrigger.value++
+    await loadAllExpenses()
     showForm.value = false
     editingExpense.value = null
   }
@@ -198,7 +137,9 @@ const saveExpense = async (expense: Omit<Expense, 'id'>) => {
 
 const handleLogout = async () => {
   await signOut()
-  // expenses will be cleared automatically by the user watcher
+  // Clear all data
+  allExpenses.value = []
+  refreshTrigger.value++
 }
 
 // Handle editing an expense
@@ -226,11 +167,9 @@ const updateExpense = async (expense: Expense) => {
   if (error) {
     console.error('Error updating expense:', error)
   } else {
-    // Update the expense in local state
-    const index = expenses.value.findIndex(e => e.id === expense.id)
-    if (index !== -1) {
-      expenses.value[index] = data
-    }
+    // Refresh both views
+    refreshTrigger.value++
+    await loadAllExpenses()
     showForm.value = false
     editingExpense.value = null
   }
