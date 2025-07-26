@@ -38,5 +38,8 @@
         "packages": [
             "packages/*"
         ]
+    },
+    "engines": {
+        "node": ">=20.0.0"
     }
 }

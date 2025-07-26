@@ -20,6 +20,25 @@
           <div v-if="activeTab === 'home'" class="px-4">
             <TodaySummary :expenses="expenses" />
             <ExpenseList :expenses="expenses" @edit="handleEditExpense" />
+            
+            <!-- Load More Button -->
+            <div v-if="hasMoreExpenses" class="text-center py-4">
+              <v-btn
+                icon
+                variant="outlined"
+                color="primary"
+                :loading="loadingMore"
+                @click="loadMoreExpenses"
+                size="large"
+              >
+                <v-icon>mdi-chevron-down</v-icon>
+              </v-btn>
+            </div>
+            
+            <!-- No More Data Message -->
+            <div v-else-if="expenses.length > 0" class="text-center py-4">
+              <span class="text-grey-darken-1">已加载全部</span>
+            </div>
           </div>
 
           <!-- Charts Tab Content -->
@@ -77,41 +96,80 @@ const showForm = ref(false)
 const showPasswordChange = ref(false)
 const editingExpense = ref<Expense | null>(null)
 const expenses = ref<Expense[]>([])
+const currentPage = ref(0)
+const pageSize = 5
+const hasMoreExpenses = ref(true)
+const loadingMore = ref(false)
 
 // Initialize auth on app load
 onMounted(async () => {
   await initAuth()
   if (user.value) {
-    await loadExpenses()
+    await loadExpenses(true)
   }
 })
 
 // Watch for user authentication changes
 watch(user, async (newUser, oldUser) => {
   if (newUser && !oldUser) {
-    // User just logged in, load their expenses
-    await loadExpenses()
+    // User just logged in, reset pagination and load their expenses
+    currentPage.value = 0
+    hasMoreExpenses.value = true
+    await loadExpenses(true)
   } else if (!newUser && oldUser) {
-    // User just logged out, clear expenses
+    // User just logged out, clear expenses and reset pagination
     expenses.value = []
+    currentPage.value = 0
+    hasMoreExpenses.value = true
   }
 })
 
-// Load expenses from Supabase
-const loadExpenses = async () => {
+// Load expenses from Supabase with pagination
+const loadExpenses = async (reset = false) => {
   if (!user.value) return
 
+  if (reset) {
+    expenses.value = []
+    currentPage.value = 0
+    hasMoreExpenses.value = true
+  }
+
+  if (!hasMoreExpenses.value && !reset) return
+
+  const pageToLoad = reset ? 0 : currentPage.value
+  
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
     .eq('user_id', user.value.id)
-    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(pageToLoad * pageSize, (pageToLoad + 1) * pageSize - 1)
 
   if (error) {
     console.error('Error loading expenses:', error)
   } else {
-    expenses.value = data || []
+    if (reset) {
+      expenses.value = data || []
+      currentPage.value = 1 // Set to 1 since we loaded page 0
+    } else {
+      expenses.value = [...expenses.value, ...(data || [])]
+      currentPage.value++ // Increment for next load
+    }
+    
+    // Check if we have more data to load
+    if (!data || data.length < pageSize) {
+      hasMoreExpenses.value = false
+    }
   }
+}
+
+// Load more expenses
+const loadMoreExpenses = async () => {
+  if (loadingMore.value || !hasMoreExpenses.value) return
+  
+  loadingMore.value = true
+  await loadExpenses()
+  loadingMore.value = false
 }
 
 // Save expense to Supabase

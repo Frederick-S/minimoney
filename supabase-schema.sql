@@ -15,6 +15,9 @@ CREATE INDEX expenses_user_id_idx ON expenses(user_id);
 -- Create index on date for better performance
 CREATE INDEX expenses_date_idx ON expenses(date);
 
+-- Create index on created_at for pagination performance
+CREATE INDEX expenses_created_at_idx ON expenses(created_at);
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 
