@@ -79,8 +79,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSupabase } from '@/composables/useSupabase'
 
+const router = useRouter()
 const { signIn, signUp } = useSupabase()
 
 const isLogin = ref(true)
@@ -120,7 +122,11 @@ const handleSubmit = async () => {
 
     if (authError) {
       error.value = authError.message
-    } else if (!isLogin.value) {
+    } else if (isLogin.value) {
+      // Successful login - redirect to home
+      router.push('/')
+    } else {
+      // Successful signup - show message
       successMessage.value = '注册成功！请检查邮箱确认注册。'
     }
   } catch (err) {

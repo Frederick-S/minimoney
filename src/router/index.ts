@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useSupabase } from '../composables/useSupabase'
 import HomeView from '../components/HomeView.vue'
 import ChartsView from '../components/ChartsView.vue'
+import Auth from '../components/Auth.vue'
 
 const routes = [
   {
@@ -8,22 +10,48 @@ const routes = [
     redirect: '/home'
   },
   {
+    path: '/login',
+    name: 'Login',
+    component: Auth
+  },
+  {
     path: '/home',
     name: 'Home',
     component: HomeView,
-    props: true
+    props: true,
+    meta: { requiresAuth: true }
   },
   {
     path: '/charts',
     name: 'Charts',
     component: ChartsView,
-    props: true
+    props: true,
+    meta: { requiresAuth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// Route guard for authentication
+router.beforeEach(async (to, from, next) => {
+  const { user, initAuth } = useSupabase()
+  
+  // Initialize auth if not already done
+  if (user.value === undefined) {
+    await initAuth()
+  }
+  
+  // Check if route requires authentication
+  if (to.meta.requiresAuth && !user.value) {
+    next('/login')
+  } else if (to.path === '/login' && user.value) {
+    next('/home')
+  } else {
+    next()
+  }
 })
 
 export default router

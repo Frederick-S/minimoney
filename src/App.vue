@@ -6,13 +6,15 @@
         <v-progress-circular indeterminate size="64" />
       </div>
 
-      <!-- Authentication Screen -->
-      <Auth v-else-if="!user" />
-
-      <!-- Main App (Authenticated) -->
+      <!-- Main App -->
       <v-container v-else class="pa-0 max-w-md mx-auto" fluid>
-        <!-- Header -->
-        <AppHeader :user="user" @logout="handleLogout" @change-password="showPasswordChange = true" />
+        <!-- Header (only show if user is authenticated) -->
+        <AppHeader 
+          v-if="user" 
+          :user="user" 
+          @logout="handleLogout" 
+          @change-password="showPasswordChange = true" 
+        />
 
         <!-- Main Content Area -->
         <div class="content-area">
@@ -22,8 +24,8 @@
           />
         </div>
 
-        <!-- Floating Action Button (only show on home tab) -->
-        <div v-if="$route.name === 'Home'" class="fixed-fab">
+        <!-- Floating Action Button (only show on home tab and if authenticated) -->
+        <div v-if="user && $route.name === 'Home'" class="fixed-fab">
           <v-fab
             location="bottom center"
             size="56"
@@ -33,17 +35,21 @@
           />
         </div>
 
-        <!-- Bottom Navigation -->
-        <BottomNavigation />
+        <!-- Bottom Navigation (only show if authenticated) -->
+        <BottomNavigation v-if="user" />
 
-        <!-- Expense Form Dialog -->
+        <!-- Expense Form Dialog (only show if authenticated) -->
         <ExpenseFormManager 
+          v-if="user"
           v-model="showForm" 
           :expense="editingExpense"
         />
 
-        <!-- Password Change Dialog -->
-        <PasswordChange v-model="showPasswordChange" />
+        <!-- Password Change Dialog (only show if authenticated) -->
+        <PasswordChange 
+          v-if="user"
+          v-model="showPasswordChange" 
+        />
       </v-container>
     </v-main>
   </v-app>
@@ -51,10 +57,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSupabase } from './composables/useSupabase'
 import { useExpenseManagement } from './composables/useExpenseManagement'
 import AppHeader from './components/AppHeader.vue'
-import Auth from './components/Auth.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
@@ -62,6 +68,7 @@ import { type Expense } from './types'
 
 const { user, loading, signOut, initAuth } = useSupabase()
 const { refreshTrigger } = useExpenseManagement()
+const router = useRouter()
 
 const showForm = ref(false)
 const showPasswordChange = ref(false)
@@ -74,6 +81,7 @@ onMounted(async () => {
 
 const handleLogout = async () => {
   await signOut()
+  router.push('/login')
 }
 
 // Handle editing an expense
