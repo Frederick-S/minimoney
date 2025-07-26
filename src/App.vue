@@ -125,6 +125,8 @@
           color="primary"
           grow
           class="elevation-8"
+          fixed
+          app
         >
           <v-btn value="home">
             <v-icon>mdi-home</v-icon>
