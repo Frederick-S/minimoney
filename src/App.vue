@@ -1,143 +1,168 @@
 <template>
-  <div class="min-h-screen bg-background">
-    <div class="max-w-md mx-auto">
-      <!-- Header -->
-      <div class="sticky top-0 bg-background/95 backdrop-blur-sm z-40 border-b border-border/50">
-        <div class="px-4 py-6">
-          <h1 class="text-2xl font-bold text-foreground">记账</h1>
-          <p class="text-sm text-muted-foreground">简单记录每一笔支出</p>
-        </div>
-      </div>
+  <v-app>
+    <v-main class="bg-grey-lighten-5">
+      <v-container class="pa-0 max-w-md mx-auto" fluid>
+        <!-- Header -->
+        <v-app-bar 
+          color="primary" 
+          dark 
+          elevation="1"
+          class="mb-0"
+        >
+          <v-app-bar-title>
+            <div class="d-flex flex-column">
+              <span class="text-h6">记账</span>
+              <span class="text-caption opacity-75">简单记录每一笔支出</span>
+            </div>
+          </v-app-bar-title>
+        </v-app-bar>
 
-      <!-- Content -->
-      <div class="px-4 pb-24">
-        <!-- Summary Dashboard -->
-        <div class="py-4">
-          <div class="bg-card rounded-xl p-4 shadow-sm border">
-            <h2 class="text-lg font-semibold mb-2">今日支出</h2>
-            <p class="text-2xl font-bold text-foreground">{{ formatAmount(todayTotal) }}</p>
-          </div>
-        </div>
-
-        <!-- Recent Expenses -->
-        <div class="space-y-1">
-          <h2 class="text-lg font-semibold text-foreground mb-4">
-            最近支出
-          </h2>
-          
-          <div v-if="sortedExpenses.length === 0" class="text-center py-12">
-            <div class="text-6xl mb-4">💸</div>
-            <h3 class="text-lg font-medium text-foreground mb-2">
-              还没有支出记录
-            </h3>
-            <p class="text-sm text-muted-foreground mb-6">
-              点击右下角的 + 按钮添加第一笔支出
-            </p>
-          </div>
-          
-          <div v-else class="space-y-2">
-            <div 
-              v-for="expense in sortedExpenses" 
-              :key="expense.id"
-              class="bg-card rounded-lg p-4 border shadow-sm"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex-1">
-                  <div class="flex items-center gap-3 mb-2">
-                    <span class="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-xs font-medium">
-                      {{ categoryNames[expense.category] }}
-                    </span>
-                    <span class="text-sm text-muted-foreground">
-                      {{ new Date(expense.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) }}
-                    </span>
-                  </div>
-                  <p class="text-lg font-semibold text-foreground">
-                    {{ formatAmount(expense.amount) }}
-                  </p>
-                  <p v-if="expense.note" class="text-sm text-muted-foreground mt-1">
-                    {{ expense.note }}
-                  </p>
-                </div>
+        <!-- Content -->
+        <div class="pa-4 pb-24">
+          <!-- Summary Dashboard -->
+          <v-card class="mb-6" elevation="2">
+            <v-card-text>
+              <v-card-title class="pa-0 text-h6 mb-2">今日支出</v-card-title>
+              <div class="text-h4 font-weight-bold text-primary">
+                {{ formatAmount(todayTotal) }}
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            </v-card-text>
+          </v-card>
 
-      <!-- Floating Action Button -->
-      <div class="fixed bottom-6 right-6">
-        <button 
-          class="bg-primary text-primary-foreground rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-          @click="showForm = true"
-        >
-          <span class="text-2xl">+</span>
-        </button>
-      </div>
-
-      <!-- Simple Form Modal -->
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50" @click="showForm = false">
-        <div 
-          class="w-full max-w-md bg-background rounded-t-3xl p-6 h-[80vh] flex flex-col"
-          @click.stop
-        >
-          <div class="pb-6">
-            <h2 class="text-xl font-semibold">添加支出</h2>
-          </div>
-
-          <div class="space-y-6 flex-1">
-            <div class="space-y-2">
-              <label class="text-base font-medium">金额 *</label>
-              <input 
-                type="number" 
-                v-model="amount"
-                class="w-full border border-input rounded-md px-3 py-2 bg-background"
-                placeholder="0.00"
-              />
+          <!-- Recent Expenses -->
+          <div>
+            <h2 class="text-h6 font-weight-medium mb-4">最近支出</h2>
+            
+            <div v-if="sortedExpenses.length === 0" class="text-center py-12">
+              <div class="text-h1 mb-4">💸</div>
+              <v-card-title class="justify-center">还没有支出记录</v-card-title>
+              <v-card-subtitle class="text-center mb-6">
+                点击右下角的 + 按钮添加第一笔支出
+              </v-card-subtitle>
             </div>
             
-            <div class="space-y-2">
-              <label class="text-base font-medium">分类</label>
-              <select 
-                v-model="category"
-                class="w-full border border-input rounded-md px-3 py-2 bg-background"
+            <div v-else>
+              <v-card 
+                v-for="expense in sortedExpenses" 
+                :key="expense.id"
+                class="mb-3"
+                elevation="1"
               >
-                <option value="Food">餐饮</option>
-                <option value="Transport">交通</option>
-                <option value="Shopping">购物</option>
-                <option value="Entertainment">娱乐</option>
-                <option value="Other">其他</option>
-              </select>
+                <v-card-text>
+                  <div class="d-flex justify-space-between align-start">
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-center ga-3 mb-2">
+                        <v-chip 
+                          :color="getCategoryColor(expense.category)"
+                          size="small"
+                          variant="flat"
+                        >
+                          {{ categoryNames[expense.category] }}
+                        </v-chip>
+                        <span class="text-caption text-medium-emphasis">
+                          {{ new Date(expense.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) }}
+                        </span>
+                      </div>
+                      <div class="text-h6 font-weight-medium text-primary">
+                        {{ formatAmount(expense.amount) }}
+                      </div>
+                      <div v-if="expense.note" class="text-body-2 text-medium-emphasis mt-1">
+                        {{ expense.note }}
+                      </div>
+                    </div>
+                  </div>
+                </v-card-text>
+              </v-card>
             </div>
-            
-            <div class="space-y-2">
-              <label class="text-base font-medium">备注</label>
-              <textarea 
-                v-model="note"
-                class="w-full border border-input rounded-md px-3 py-2 bg-background resize-none"
-                placeholder="添加备注信息..."
-                rows="3"
-              ></textarea>
-            </div>
-          </div>
-
-          <div class="flex gap-3 pt-6">
-            <button 
-              @click="showForm = false"
-              class="flex-1 py-3 px-4 border border-input rounded-md text-foreground hover:bg-muted"
-            >
-              取消
-            </button>
-            <button 
-              @click="saveExpense"
-              class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            >
-              保存
-            </button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+
+        <!-- Floating Action Button -->
+        <v-fab
+          icon="mdi-plus"
+          location="bottom end"
+          color="primary"
+          size="large"
+          app
+          @click="showForm = true"
+        />
+
+        <!-- Material Design Form Dialog -->
+        <v-dialog 
+          v-model="showForm" 
+          max-width="400" 
+          persistent
+          :fullscreen="$vuetify.display.mobile"
+        >
+          <v-card>
+            <v-toolbar color="primary" dark>
+              <v-toolbar-title>添加支出</v-toolbar-title>
+              <v-spacer />
+              <v-btn icon @click="showForm = false">
+                <v-icon>mdi-close</v-icon>
+              </v-btn>
+            </v-toolbar>
+
+            <v-card-text class="pa-6">
+              <v-form @submit.prevent="saveExpense">
+                <v-text-field
+                  v-model="amount"
+                  label="金额"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  prefix="¥"
+                  variant="outlined"
+                  :rules="[v => !!v || '请输入金额']"
+                  required
+                  class="mb-4"
+                />
+                
+                <v-select
+                  v-model="category"
+                  :items="categoryOptions"
+                  item-title="text"
+                  item-value="value"
+                  label="分类"
+                  variant="outlined"
+                  class="mb-4"
+                />
+                
+                <v-textarea
+                  v-model="note"
+                  label="备注"
+                  variant="outlined"
+                  rows="3"
+                  no-resize
+                  placeholder="添加备注信息..."
+                  class="mb-4"
+                />
+              </v-form>
+            </v-card-text>
+
+            <v-card-actions class="pa-6 pt-0">
+              <v-spacer />
+              <v-btn 
+                variant="outlined" 
+                @click="showForm = false"
+                class="mr-2"
+              >
+                取消
+              </v-btn>
+              <v-btn 
+                color="primary"
+                variant="flat"
+                @click="saveExpense"
+                :disabled="!amount"
+              >
+                保存
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
 
 <script setup lang="ts">
@@ -196,6 +221,25 @@ const categoryNames: Record<string, string> = {
   Shopping: '购物',
   Entertainment: '娱乐',
   Other: '其他'
+}
+
+const categoryOptions = [
+  { text: '餐饮', value: 'Food' },
+  { text: '交通', value: 'Transport' },
+  { text: '购物', value: 'Shopping' },
+  { text: '娱乐', value: 'Entertainment' },
+  { text: '其他', value: 'Other' }
+]
+
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    Food: 'orange',
+    Transport: 'blue',
+    Shopping: 'pink',
+    Entertainment: 'purple',
+    Other: 'grey'
+  }
+  return colors[category] || 'grey'
 }
 
 const sortedExpenses = computed(() => 

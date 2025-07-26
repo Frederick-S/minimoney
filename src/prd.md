@@ -1,6 +1,6 @@
 # 记账 (Vue Expense Tracker) - Product Requirements Document
 
-A minimalist mobile-first expense tracking application built with Vue 3 that helps users monitor their daily spending with beautiful, intuitive interactions.
+A minimalist mobile-first expense tracking application built with Vue 3 and Material Design UI that helps users monitor their daily spending with beautiful, intuitive interactions.
 
 **Experience Qualities**:
 1. **Effortless** - Recording expenses should take seconds, not minutes
@@ -10,114 +10,104 @@ A minimalist mobile-first expense tracking application built with Vue 3 that hel
 **Complexity Level**: Light Application (multiple features with basic state)
 - Core functionality focuses on expense entry, categorization, and basic reporting
 - Persistent data storage without requiring user accounts
-- Mobile-optimized interface built with Vue 3 and Composition API
-- Material design-inspired components with Tailwind CSS styling
+- Mobile-optimized interface built with Vue 3 and Vuetify (Material Design)
+- Modern Material Design 3 components with proper theming
 
 ## Essential Features
 
 ### Expense Entry
 - **Functionality**: Quick expense recording with amount, category, and optional note
 - **Purpose**: Primary user action - must be fast and frictionless
-- **Trigger**: Floating action button prominently displayed
+- **Trigger**: Material Design Floating Action Button prominently displayed
 - **Progression**: Tap FAB → Enter amount → Select category → Add note (optional) → Save
 - **Success criteria**: Expense appears in list immediately, form resets for next entry
 
 ### Category Management
-- **Functionality**: Predefined categories (Food, Transport, Shopping, etc.) with custom icons
+- **Functionality**: Predefined categories (Food, Transport, Shopping, etc.) with Material Design chips
 - **Purpose**: Organize expenses for better insights and reporting
-- **Trigger**: Category selection during expense entry
-- **Progression**: View categories → Select from grid → Return to expense form
-- **Success criteria**: Selected category appears in expense entry, affects summary calculations
+- **Trigger**: Category selection during expense entry with v-select component
+- **Progression**: View categories → Select from dropdown → Return to expense form
+- **Success criteria**: Selected category appears as colored chip, affects summary calculations
 
 ### Expense History
-- **Functionality**: Chronological list of all expenses with edit/delete capabilities
-- **Purpose**: Review past spending and make corrections
-- **Trigger**: Main screen shows recent expenses automatically
-- **Progression**: View list → Tap expense → Edit details → Save changes
-- **Success criteria**: Changes reflect immediately, totals update correctly
+- **Functionality**: Material Design card-based list of all expenses with Material icons
+- **Purpose**: Review past spending in an elegant, scannable format
+- **Trigger**: Main screen shows recent expenses in v-card components
+- **Progression**: View list → Scroll through cards → Read details easily
+- **Success criteria**: Clean card layout, proper typography hierarchy, clear visual grouping
 
 ### Summary Dashboard
-- **Functionality**: Daily/weekly/monthly spending totals with category breakdown
-- **Purpose**: Provide spending insights at a glance
-- **Trigger**: Top section of main screen
-- **Progression**: View summary → Tap period selector → See different timeframes
-- **Success criteria**: Accurate calculations, smooth period transitions
+- **Functionality**: Daily spending totals with Material Design elevation and typography
+- **Purpose**: Provide spending insights at a glance using Material Design principles
+- **Trigger**: Top section of main screen in elevated v-card
+- **Progression**: View summary → See clear financial information
+- **Success criteria**: Accurate calculations, proper Material Design styling
 
 ## Edge Case Handling
 
-- **Empty States**: Friendly onboarding messages when no expenses exist yet
-- **Invalid Input**: Prevent negative amounts, handle decimal formatting gracefully
+- **Empty States**: Material Design empty state with appropriate illustration and guidance
+- **Invalid Input**: Material text field validation with proper error states
 - **Data Loss**: All data persists using Spark KV storage
 - **Network Issues**: App works completely offline
-- **Touch Targets**: All interactive elements meet 44px minimum for accessibility
+- **Touch Targets**: All Material components meet accessibility standards
+- **Form Validation**: Material Design form validation with proper error messaging
 
 ## Design Direction
 
-The interface should feel modern, clean, and material-inspired with gentle shadows and purposeful motion that guides the user's attention without distraction.
+The interface follows Google's Material Design 3 guidelines with proper elevation, typography, and color usage. Components feel native to Material Design with appropriate shadows, animations, and interactions.
 
 ## Color Selection
 
-Material Design 3 inspired palette using analogous colors for harmony and trust.
+Material Design 3 color system using Material You principles:
 
-- **Primary Color**: Deep Teal (oklch(0.45 0.12 180)) - Communicates stability and financial responsibility
-- **Secondary Colors**: Soft Blue-Green (oklch(0.65 0.08 170)) for supporting elements
-- **Accent Color**: Warm Orange (oklch(0.7 0.15 50)) for call-to-action elements like the FAB
-- **Foreground/Background Pairings**:
-  - Background (Pure White oklch(1 0 0)): Dark Gray text (oklch(0.2 0 0)) - Ratio 16.7:1 ✓
-  - Card (Light Gray oklch(0.98 0 0)): Dark Gray text (oklch(0.2 0 0)) - Ratio 15.8:1 ✓
-  - Primary (Deep Teal oklch(0.45 0.12 180)): White text (oklch(1 0 0)) - Ratio 5.2:1 ✓
-  - Accent (Warm Orange oklch(0.7 0.15 50)): White text (oklch(1 0 0)) - Ratio 4.9:1 ✓
+- **Primary Color**: Material Blue (#2196F3) - Standard Material primary for trust and reliability
+- **Secondary Colors**: Material Amber (#FFC107) for supporting elements and accents
+- **Surface Colors**: Material Design surface variations with proper contrast
+- **State Colors**: Standard Material success, warning, error, and info colors
+- **Category Colors**: Distinct Material colors for each expense category (orange, blue, pink, purple, grey)
 
 ## Font Selection
 
-Clean, readable typography that works well at small sizes on mobile devices using Inter for its excellent mobile legibility.
+Material Design typography using Roboto font family for consistency with Material guidelines:
 
 - **Typographic Hierarchy**:
-  - H1 (Screen Titles): Inter Bold/24px/tight letter spacing
-  - H2 (Section Headers): Inter SemiBold/18px/normal spacing
-  - Body (Expense Items): Inter Regular/16px/relaxed line height
-  - Caption (Dates, Notes): Inter Regular/14px/subtle color
-  - Numbers (Amounts): Inter Medium/16px/tabular figures
-
-## Animations
-
-Subtle material-inspired motion that reinforces the physical metaphor of handling money with gentle spring animations and thoughtful transitions.
-
-- **Purposeful Meaning**: FAB bounce on tap, card elevation on selection, gentle slide transitions between screens
-- **Hierarchy of Movement**: Most important - expense entry interactions, Secondary - list updates, Subtle - navigation transitions
+  - H1 (App Bar): Roboto Medium/20px Material Design headline styles
+  - H2 (Section Headers): Roboto Medium/16px Material subtitle styles
+  - Body (Expense Items): Roboto Regular/14px Material body styles
+  - Caption (Dates, Notes): Roboto Regular/12px Material caption styles
+  - Numbers (Amounts): Roboto Medium/16px for emphasis
 
 ## Component Selection
 
-- **Components**: 
-  - Cards for expense items with subtle elevation
-  - Floating Action Button for primary expense entry
-  - Sheets/Dialogs for expense entry form
-  - Tabs for different time periods
-  - Badges for categories with custom colors
-- **Customizations**: Material-inspired FAB with custom positioning, category icon grid layout
-- **States**: Clear hover/pressed states for all interactive elements with subtle elevation changes
-- **Icon Selection**: Phosphor icons for their clarity at small sizes - Plus for add, Wallet for categories, Calendar for dates
-- **Spacing**: Consistent 16px base unit (4 in Tailwind) with 8px (2) for tight spacing, 24px (6) for generous spacing
-- **Mobile**: Single column layout, large touch targets, bottom sheet for forms, sticky FAB positioning
+Using Vuetify 3 Material Design components:
+
+- **v-app**: Main application container with Material theming
+- **v-app-bar**: Material Design app bar with proper elevation
+- **v-card**: Material Design cards for expense items and summary
+- **v-fab**: Material Design Floating Action Button for primary action
+- **v-dialog**: Material Design dialogs for expense entry form
+- **v-text-field**: Material Design text inputs with proper validation
+- **v-select**: Material Design dropdown for category selection
+- **v-textarea**: Material Design text area for notes
+- **v-chip**: Material Design chips for category display
+- **v-btn**: Material Design buttons with proper states
+- **v-container/v-row/v-col**: Material Design responsive grid system
 
 ## Technical Architecture
 
-**Framework**: Vue 3 with Composition API
-- **Reactivity**: Vue 3 reactivity system for component state management
-- **Components**: Vue Single File Components (.vue) with TypeScript support
-- **State Management**: Vue refs and computed properties for local state, custom useKV hook for persistence
-
-**UI Components**: Custom Vue components inspired by shadcn/ui
-- **Styling**: Tailwind CSS with custom CSS variables for theming
-- **Design System**: Consistent component library built for Vue 3
-- **Icons**: Phosphor Icons React (compatible with Vue)
+**Framework**: Vue 3 with Composition API and Vuetify 3
+- **UI Library**: Vuetify 3.x (Material Design 3 components for Vue)
+- **Icons**: Material Design Icons (MDI) for consistency
+- **Theming**: Vuetify's built-in Material Design theming system
+- **Responsive**: Vuetify's responsive grid and breakpoint system
+- **Components**: Native Material Design components with proper a11y support
 
 **Data Persistence**: 
 - **Local Storage**: Custom useKV composable wrapping spark.kv API
-- **Type Safety**: Full TypeScript support with interface definitions
-- **Reactive Updates**: Automatic UI updates when data changes
+- **Type Safety**: Full TypeScript support with Vuetify type definitions
+- **Reactive Updates**: Vue 3 reactivity with Vuetify's reactive components
 
 **Build System**:
-- **Vite**: Fast development server and build tool optimized for Vue
-- **TypeScript**: Full type checking with Vue-specific type definitions
-- **Hot Module Replacement**: Instant updates during development
+- **Vite**: Fast development server optimized for Vue and Vuetify
+- **TypeScript**: Full type checking with Vuetify type definitions
+- **Material Design**: Vuetify's complete Material Design implementation
