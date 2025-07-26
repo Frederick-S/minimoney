@@ -15,6 +15,7 @@
         "@github/spark": "^0.0.1",
         "@mdi/font": "^7.4.47",
         "@phosphor-icons/vue": "^2.2.1",
+        "@supabase/supabase-js": "^2.52.1",
         "@tailwindcss/vite": "^4.0.17",
         "@vitejs/plugin-vue": "^6.0.0",
         "@vue/typescript": "^1.8.20",

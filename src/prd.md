@@ -1,26 +1,33 @@
 # 记账 (Vue Expense Tracker) - Product Requirements Document
 
-A minimalist mobile-first expense tracking application built with Vue 3 and Material Design UI that helps users monitor their daily spending with beautiful, intuitive interactions.
+A minimalist mobile-first expense tracking application built with Vue 3, Material Design UI, and Supabase authentication that helps users securely monitor their daily spending with beautiful, intuitive interactions.
 
 **Experience Qualities**:
 1. **Effortless** - Recording expenses should take seconds, not minutes
 2. **Insightful** - Users immediately understand their spending patterns through clear visuals
-3. **Trustworthy** - Data feels secure and reliable with smooth, responsive interactions
+3. **Trustworthy** - Data feels secure and reliable with user authentication and smooth, responsive interactions
 
-**Complexity Level**: Light Application (multiple features with basic state)
+**Complexity Level**: Light Application (multiple features with user accounts and cloud storage)
 - Core functionality focuses on expense entry, categorization, and basic reporting
-- Persistent data storage without requiring user accounts
+- User authentication and secure cloud data storage with Supabase
 - Mobile-optimized interface built with Vue 3 and Vuetify (Material Design)
 - Modern Material Design 3 components with proper theming
 
 ## Essential Features
 
+### User Authentication
+- **Functionality**: Secure user registration and login with email/password using Supabase Auth
+- **Purpose**: Protect user data and enable personal expense tracking across devices
+- **Components**: Authentication form with Material Design text fields and validation
+- **Flow**: Register → Email confirmation → Login → Access expense tracker
+- **Success criteria**: Smooth auth flow, secure data isolation, persistent login sessions
+
 ### Expense Entry
 - **Functionality**: Quick expense recording with amount, category, and optional note
 - **Purpose**: Primary user action - must be fast and frictionless
 - **Trigger**: Material Design Floating Action Button prominently displayed
-- **Progression**: Tap FAB → Enter amount → Select category → Add note (optional) → Save
-- **Success criteria**: Expense appears in list immediately, form resets for next entry
+- **Progression**: Tap FAB → Enter amount → Select category → Add note (optional) → Save to Supabase
+- **Success criteria**: Expense appears in list immediately, syncs to cloud, form resets for next entry
 
 ### Category Management
 - **Functionality**: Predefined categories (Food, Transport, Shopping, etc.) with Material Design chips
@@ -51,18 +58,25 @@ A minimalist mobile-first expense tracking application built with Vue 3 and Mate
 - **Success criteria**: Clear indication of upcoming features, professional placeholder design
 
 ### Expense History (within 首页)
-- **Functionality**: Material Design card-based list of all expenses with Material icons
-- **Purpose**: Review past spending in an elegant, scannable format
+- **Functionality**: Material Design card-based list of user's expenses with Material icons, loaded from Supabase
+- **Purpose**: Review past spending in an elegant, scannable format with real-time sync
 - **Trigger**: Main content area of 首页 tab showing recent expenses in v-card components
 - **Progression**: View list → Scroll through cards → Read details easily
-- **Success criteria**: Clean card layout, proper typography hierarchy, clear visual grouping
+- **Success criteria**: Clean card layout, proper typography hierarchy, real-time data sync
 
 ### Summary Dashboard (within 首页)
-- **Functionality**: Daily spending totals with Material Design elevation and typography
+- **Functionality**: Daily spending totals with Material Design elevation and typography, calculated from user's Supabase data
 - **Purpose**: Provide spending insights at a glance using Material Design principles
 - **Trigger**: Top section of 首页 tab in elevated v-card
 - **Progression**: View summary → See clear financial information
-- **Success criteria**: Accurate calculations, proper Material Design styling
+- **Success criteria**: Accurate calculations, proper Material Design styling, real-time updates
+
+### User Profile & Logout
+- **Functionality**: User profile menu in app header with logout option
+- **Purpose**: Display current user and provide secure logout functionality
+- **Components**: Material Design menu with user email display and logout button
+- **Flow**: Tap profile icon → View user info → Logout option
+- **Success criteria**: Clear user identification, secure logout, data cleanup on logout
 
 ## Edge Case Handling
 
@@ -126,9 +140,12 @@ Using Vuetify 3 Material Design components:
 - **Components**: Native Material Design components with proper a11y support
 
 **Data Persistence**: 
-- **Local Storage**: Custom useKV composable wrapping spark.kv API
-- **Type Safety**: Full TypeScript support with Vuetify type definitions
-- **Reactive Updates**: Vue 3 reactivity with Vuetify's reactive components
+- **Cloud Storage**: Supabase PostgreSQL database with Row Level Security
+- **Authentication**: Supabase Auth with email/password authentication
+- **Real-time Sync**: Automatic data synchronization across devices
+- **Type Safety**: Full TypeScript support with Supabase type definitions
+- **Reactive Updates**: Vue 3 reactivity with real-time database updates
+- **Security**: Row Level Security ensures users only access their own data
 
 **Build System**:
 - **Vite**: Fast development server optimized for Vue and Vuetify

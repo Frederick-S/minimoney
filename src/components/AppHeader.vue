@@ -11,8 +11,40 @@
         <span class="text-caption opacity-75">简单记录每一笔支出</span>
       </div>
     </v-app-bar-title>
+
+    <template #append>
+      <v-menu>
+        <template #activator="{ props }">
+          <v-btn
+            icon="mdi-account-circle"
+            v-bind="props"
+          />
+        </template>
+        <v-list>
+          <v-list-item>
+            <v-list-item-title>{{ user?.email }}</v-list-item-title>
+          </v-list-item>
+          <v-divider />
+          <v-list-item @click="$emit('logout')">
+            <v-list-item-title>
+              <v-icon start>mdi-logout</v-icon>
+              退出登录
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </template>
   </v-app-bar>
 </template>
 
 <script setup lang="ts">
+import type { User } from '@supabase/supabase-js'
+
+defineProps<{
+  user: User | null
+}>()
+
+defineEmits<{
+  logout: []
+}>()
 </script>
