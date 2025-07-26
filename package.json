@@ -12,7 +12,6 @@
         "preview": "vite preview"
     },
     "dependencies": {
-        "@github/spark": "^0.0.1",
         "@mdi/font": "^7.4.47",
         "@phosphor-icons/vue": "^2.2.1",
         "@supabase/supabase-js": "^2.52.1",

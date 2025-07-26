@@ -1,5 +1,4 @@
 import { createApp } from 'vue'
-import "@github/spark/spark"
 import vuetify from './plugins/vuetify'
 
 import App from './App.vue'
