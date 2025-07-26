@@ -32,7 +32,7 @@ const badgeVariants = cva(
   }
 )
 
-interface Props extends VariantProps<typeof badgeVariants> {}
+interface Props extends /* @vue-ignore */ VariantProps<typeof badgeVariants> {}
 
 defineProps<Props>()
 </script>
