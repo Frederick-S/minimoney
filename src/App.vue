@@ -18,8 +18,6 @@
         <div class="content-area">
           <router-view 
             :refresh-trigger="refreshTrigger"
-            :all-expenses="allExpenses"
-            :loading-expenses="loadingExpenses"
             @edit="handleEditExpense"
           />
         </div>
@@ -39,11 +37,9 @@
         <BottomNavigation />
 
         <!-- Expense Form Dialog -->
-        <ExpenseForm 
+        <ExpenseFormManager 
           v-model="showForm" 
           :expense="editingExpense"
-          @save="saveExpense"
-          @update="updateExpense"
         />
 
         <!-- Password Change Dialog -->
@@ -54,137 +50,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
 import { useSupabase } from './composables/useSupabase'
+import { useExpenseManagement } from './composables/useExpenseManagement'
 import AppHeader from './components/AppHeader.vue'
 import Auth from './components/Auth.vue'
-import ExpenseForm from './components/ExpenseForm.vue'
+import ExpenseFormManager from './components/ExpenseFormManager.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
 import { type Expense } from './types'
 
-const { user, loading, signOut, initAuth, supabase } = useSupabase()
-const route = useRoute()
+const { user, loading, signOut, initAuth } = useSupabase()
+const { refreshTrigger } = useExpenseManagement()
 
 const showForm = ref(false)
 const showPasswordChange = ref(false)
 const editingExpense = ref<Expense | null>(null)
-const homeViewRef = ref()
-const refreshTrigger = ref(0)
-
-// Get all expenses for charts (we'll need to load all for charts)
-const allExpenses = ref<Expense[]>([])
-const loadingExpenses = ref(false)
 
 // Initialize auth on app load
 onMounted(async () => {
   await initAuth()
-  if (user.value) {
-    await loadAllExpenses()
-  }
 })
-
-// Watch for route changes to ensure data is loaded for charts
-watch(() => route.name, async (newRouteName) => {
-  if (newRouteName === 'Charts' && user.value && allExpenses.value.length === 0) {
-    await loadAllExpenses()
-  }
-})
-
-// Watch for user changes to reload data
-watch(user, async (newUser) => {
-  if (newUser) {
-    await loadAllExpenses()
-  } else {
-    allExpenses.value = []
-  }
-})
-
-// Load all expenses for charts view
-const loadAllExpenses = async () => {
-  if (!user.value) return
-
-  loadingExpenses.value = true
-  const { data, error } = await supabase
-    .from('expenses')
-    .select('*')
-    .eq('user_id', user.value.id)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error loading all expenses:', error)
-  } else {
-    allExpenses.value = data || []
-    console.log('Loaded expenses for charts:', data?.length || 0)
-  }
-  loadingExpenses.value = false
-}
-
-// Save expense to Supabase
-const saveExpense = async (expense: Omit<Expense, 'id'>) => {
-  if (!user.value) return
-
-  const newExpense = {
-    ...expense,
-    user_id: user.value.id
-  }
-
-  const { data, error } = await supabase
-    .from('expenses')
-    .insert([newExpense])
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error saving expense:', error)
-  } else {
-    // Refresh both views
-    refreshTrigger.value++
-    await loadAllExpenses()
-    showForm.value = false
-    editingExpense.value = null
-  }
-}
 
 const handleLogout = async () => {
   await signOut()
-  // Clear all data
-  allExpenses.value = []
-  refreshTrigger.value++
 }
 
 // Handle editing an expense
 const handleEditExpense = (expense: Expense) => {
   editingExpense.value = expense
   showForm.value = true
-}
-
-// Update existing expense in Supabase
-const updateExpense = async (expense: Expense) => {
-  if (!user.value) return
-
-  const { data, error } = await supabase
-    .from('expenses')
-    .update({
-      amount: expense.amount,
-      category: expense.category,
-      note: expense.note,
-      date: expense.date
-    })
-    .eq('id', expense.id)
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error updating expense:', error)
-  } else {
-    // Refresh both views
-    refreshTrigger.value++
-    await loadAllExpenses()
-    showForm.value = false
-    editingExpense.value = null
-  }
 }
 </script>
 

@@ -44,35 +44,63 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import CategoryChart from './charts/CategoryChart.vue'
 import TrendChart from './charts/TrendChart.vue'
 import CategoryDetails from './charts/CategoryDetails.vue'
 import PeriodFilter from './charts/PeriodFilter.vue'
 import SummaryStats from './charts/SummaryStats.vue'
 import EmptyState from './charts/EmptyState.vue'
-import { type Expense, type ChartProps } from '../types'
+import { useExpenseManagement } from '../composables/useExpenseManagement'
+import { type Expense } from '../types'
 
 const props = withDefaults(defineProps<{ 
-  allExpenses?: Expense[]
-  loadingExpenses?: boolean 
+  refreshTrigger?: number
 }>(), {
-  allExpenses: () => [],
-  loadingExpenses: false
+  refreshTrigger: 0
 })
 
-// Use allExpenses prop instead of expenses
-const expenses = computed(() => props.allExpenses)
+const route = useRoute()
+const { loadAllExpenses } = useExpenseManagement()
 
+const expenses = ref<Expense[]>([])
+const loadingExpenses = ref(false)
 const selectedPeriodType = ref<'month' | 'year'>('month')
 const selectedMonth = ref('')
 const selectedYear = ref('')
 
+// Load all expenses for charts
+const loadExpensesData = async () => {
+  loadingExpenses.value = true
+  try {
+    const data = await loadAllExpenses()
+    expenses.value = data
+  } finally {
+    loadingExpenses.value = false
+  }
+}
+
 // Initialize period selection
-onMounted(() => {
+onMounted(async () => {
   const now = new Date()
   selectedMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   selectedYear.value = now.getFullYear().toString()
+  
+  // Load data when component mounts
+  await loadExpensesData()
+})
+
+// Watch for route changes to reload data
+watch(() => route.name, async (newRouteName) => {
+  if (newRouteName === 'Charts') {
+    await loadExpensesData()
+  }
+})
+
+// Watch for refresh trigger
+watch(() => props.refreshTrigger, async () => {
+  await loadExpensesData()
 })
 
 // Filter expenses based on selected period

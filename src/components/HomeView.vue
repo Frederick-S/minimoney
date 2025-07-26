@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
+import { useExpenseManagement } from '../composables/useExpenseManagement'
 import TodaySummary from './TodaySummary.vue'
 import ExpenseList from './ExpenseList.vue'
 import { type Expense, type HomeViewProps, type HomeViewEmits } from '../types'
@@ -44,6 +45,7 @@ const props = withDefaults(defineProps<HomeViewProps>(), {
 const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
+const { refreshTrigger } = useExpenseManagement()
 
 const expenses = ref<Expense[]>([])
 const currentPage = ref(0)
@@ -137,7 +139,7 @@ watch(user, async (newUser, oldUser) => {
 })
 
 // Watch for expense changes (when new expense is added or updated)
-watch(() => props.refreshTrigger, async () => {
+watch([() => props.refreshTrigger, refreshTrigger], async () => {
   if (user.value) {
     await loadExpenses(true)
   }
