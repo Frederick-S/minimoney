@@ -60,6 +60,16 @@
             >
               {{ error }}
             </v-alert>
+
+            <v-alert
+              v-if="successMessage"
+              type="info"
+              class="mt-4"
+              closable
+              @click:close="successMessage = ''"
+            >
+              {{ successMessage }}
+            </v-alert>
           </v-card>
         </div>
       </v-col>
@@ -78,6 +88,7 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
+const successMessage = ref('')
 
 const emailRules = [
   (v: string) => !!v || '邮箱是必填项',
@@ -92,6 +103,7 @@ const passwordRules = [
 const toggleMode = () => {
   isLogin.value = !isLogin.value
   error.value = ''
+  successMessage.value = ''
 }
 
 const handleSubmit = async () => {
@@ -99,6 +111,7 @@ const handleSubmit = async () => {
 
   loading.value = true
   error.value = ''
+  successMessage.value = ''
 
   try {
     const { error: authError } = isLogin.value
@@ -108,7 +121,7 @@ const handleSubmit = async () => {
     if (authError) {
       error.value = authError.message
     } else if (!isLogin.value) {
-      error.value = '注册成功！请检查邮箱确认注册。'
+      successMessage.value = '注册成功！请检查邮箱确认注册。'
     }
   } catch (err) {
     error.value = '操作失败，请重试'
