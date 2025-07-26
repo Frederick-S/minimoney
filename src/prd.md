@@ -29,17 +29,38 @@ A minimalist mobile-first expense tracking application built with Vue 3 and Mate
 - **Progression**: View categories → Select from dropdown → Return to expense form
 - **Success criteria**: Selected category appears as colored chip, affects summary calculations
 
-### Expense History
+### Bottom Navigation
+- **Functionality**: Material Design bottom navigation with two tabs: 首页 (Home) and 图表 (Charts)
+- **Purpose**: Organize core functionality into logical sections for better user experience
+- **Trigger**: Always visible at bottom of screen with v-bottom-navigation component
+- **Progression**: Tap tab → Switch content view → Access different features
+- **Success criteria**: Smooth tab transitions, clear active state, proper Material Design styling
+
+### 首页 (Home Tab)
+- **Functionality**: Contains expense entry, history, and daily summary in organized Material Design layout
+- **Purpose**: Primary workspace for recording and reviewing recent expenses
+- **Components**: Summary card, expense history list, floating action button for new entries
+- **Layout**: Expense summary at top, recent expenses list below, FAB positioned for easy access
+- **Success criteria**: All core expense tracking features accessible, clean visual hierarchy
+
+### 图表 (Charts Tab)
+- **Functionality**: Placeholder for future analytics and visualizations
+- **Purpose**: Reserved space for expense analysis, trends, and category breakdowns
+- **Components**: Placeholder content with Material Design icons and descriptive text
+- **Content**: Preview of future features including monthly trends, category pie charts, and comparative analysis
+- **Success criteria**: Clear indication of upcoming features, professional placeholder design
+
+### Expense History (within 首页)
 - **Functionality**: Material Design card-based list of all expenses with Material icons
 - **Purpose**: Review past spending in an elegant, scannable format
-- **Trigger**: Main screen shows recent expenses in v-card components
+- **Trigger**: Main content area of 首页 tab showing recent expenses in v-card components
 - **Progression**: View list → Scroll through cards → Read details easily
 - **Success criteria**: Clean card layout, proper typography hierarchy, clear visual grouping
 
-### Summary Dashboard
+### Summary Dashboard (within 首页)
 - **Functionality**: Daily spending totals with Material Design elevation and typography
 - **Purpose**: Provide spending insights at a glance using Material Design principles
-- **Trigger**: Top section of main screen in elevated v-card
+- **Trigger**: Top section of 首页 tab in elevated v-card
 - **Progression**: View summary → See clear financial information
 - **Success criteria**: Accurate calculations, proper Material Design styling
 
@@ -82,9 +103,10 @@ Material Design typography using Roboto font family for consistency with Materia
 Using Vuetify 3 Material Design components:
 
 - **v-app**: Main application container with Material theming
-- **v-app-bar**: Material Design app bar with proper elevation
+- **v-app-bar**: Material Design app bar with proper elevation  
+- **v-bottom-navigation**: Material Design bottom navigation for tab switching
 - **v-card**: Material Design cards for expense items and summary
-- **v-fab**: Material Design Floating Action Button for primary action
+- **v-fab**: Material Design Floating Action Button for primary action (positioned above bottom nav)
 - **v-dialog**: Material Design dialogs for expense entry form
 - **v-text-field**: Material Design text inputs with proper validation
 - **v-select**: Material Design dropdown for category selection
@@ -92,6 +114,7 @@ Using Vuetify 3 Material Design components:
 - **v-chip**: Material Design chips for category display
 - **v-btn**: Material Design buttons with proper states
 - **v-container/v-row/v-col**: Material Design responsive grid system
+- **v-icon**: Material Design Icons for navigation and placeholder content
 
 ## Technical Architecture
 
