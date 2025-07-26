@@ -19,7 +19,7 @@
           <!-- Home Tab Content -->
           <div v-if="activeTab === 'home'" class="px-4">
             <TodaySummary :expenses="expenses" />
-            <ExpenseList :expenses="expenses" />
+            <ExpenseList :expenses="expenses" @edit="handleEditExpense" />
           </div>
 
           <!-- Charts Tab Content -->
@@ -35,7 +35,7 @@
             size="56"
             color="primary"
             icon="mdi-plus"
-            @click="showForm = true"
+            @click="() => { editingExpense = null; showForm = true }"
           />
         </div>
 
@@ -45,7 +45,9 @@
         <!-- Expense Form Dialog -->
         <ExpenseForm 
           v-model="showForm" 
+          :expense="editingExpense"
           @save="saveExpense"
+          @update="updateExpense"
         />
 
         <!-- Password Change Dialog -->
@@ -81,6 +83,7 @@ const { user, loading, signOut, initAuth, supabase } = useSupabase()
 const activeTab = ref('home')
 const showForm = ref(false)
 const showPasswordChange = ref(false)
+const editingExpense = ref<Expense | null>(null)
 const expenses = ref<Expense[]>([])
 
 // Initialize auth on app load
@@ -139,12 +142,48 @@ const saveExpense = async (expense: Omit<Expense, 'id'>) => {
   } else {
     expenses.value.unshift(data)
     showForm.value = false
+    editingExpense.value = null
   }
 }
 
 const handleLogout = async () => {
   await signOut()
   // expenses will be cleared automatically by the user watcher
+}
+
+// Handle editing an expense
+const handleEditExpense = (expense: Expense) => {
+  editingExpense.value = expense
+  showForm.value = true
+}
+
+// Update existing expense in Supabase
+const updateExpense = async (expense: Expense) => {
+  if (!user.value) return
+
+  const { data, error } = await supabase
+    .from('expenses')
+    .update({
+      amount: expense.amount,
+      category: expense.category,
+      note: expense.note,
+      date: expense.date
+    })
+    .eq('id', expense.id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating expense:', error)
+  } else {
+    // Update the expense in local state
+    const index = expenses.value.findIndex(e => e.id === expense.id)
+    if (index !== -1) {
+      expenses.value[index] = data
+    }
+    showForm.value = false
+    editingExpense.value = null
+  }
 }
 </script>
 

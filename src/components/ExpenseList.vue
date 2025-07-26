@@ -39,6 +39,15 @@
                 {{ expense.note }}
               </div>
             </div>
+            <div class="ml-3">
+              <v-btn
+                icon="mdi-pencil"
+                size="small"
+                variant="text"
+                color="primary"
+                @click="emit('edit', expense)"
+              />
+            </div>
           </div>
         </v-card-text>
       </v-card>
@@ -61,7 +70,12 @@ interface Props {
   expenses: Expense[]
 }
 
+interface Emits {
+  (e: 'edit', expense: Expense): void
+}
+
 const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
 
 const categoryNames: Record<string, string> = {
   Food: '餐饮',

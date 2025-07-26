@@ -7,7 +7,7 @@
   >
     <v-card>
       <v-toolbar color="primary" dark>
-        <v-toolbar-title>添加支出</v-toolbar-title>
+        <v-toolbar-title>{{ props.expense ? '编辑支出' : '添加支出' }}</v-toolbar-title>
         <v-spacer />
         <v-btn icon @click="closeForm">
           <v-icon>mdi-close</v-icon>
@@ -66,7 +66,7 @@
           @click="handleSave"
           :disabled="!amount"
         >
-          保存
+          {{ props.expense ? '更新' : '保存' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -86,11 +86,13 @@ interface Expense {
 
 interface Props {
   modelValue: boolean
+  expense?: Expense | null
 }
 
 interface Emits {
   (e: 'update:modelValue', value: boolean): void
   (e: 'save', expense: Omit<Expense, 'id'>): void
+  (e: 'update', expense: Expense): void
 }
 
 const props = defineProps<Props>()
@@ -111,6 +113,20 @@ const categoryOptions = [
 
 watch(() => props.modelValue, (newValue) => {
   showForm.value = newValue
+  if (newValue && props.expense) {
+    // Populate form with existing expense data
+    amount.value = props.expense.amount.toString()
+    category.value = props.expense.category
+    note.value = props.expense.note || ''
+  }
+})
+
+watch(() => props.expense, (newExpense) => {
+  if (newExpense) {
+    amount.value = newExpense.amount.toString()
+    category.value = newExpense.category
+    note.value = newExpense.note || ''
+  }
 })
 
 watch(showForm, (newValue) => {
@@ -134,11 +150,18 @@ const handleSave = () => {
   const expenseData = {
     amount: parseFloat(amount.value),
     category: category.value,
-    date: new Date().toISOString(),
+    date: props.expense ? props.expense.date : new Date().toISOString(),
     note: note.value.trim() || undefined
   }
   
-  emit('save', expenseData)
+  if (props.expense) {
+    // Emit update event with the expense id
+    emit('update', { ...expenseData, id: props.expense.id })
+  } else {
+    // Emit save event for new expense
+    emit('save', expenseData)
+  }
+  
   closeForm()
 }
 </script>
