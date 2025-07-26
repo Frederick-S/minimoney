@@ -1,38 +1,45 @@
 <template>
   <div class="px-4">
-    <!-- Time Period Filter -->
-    <PeriodFilter
-      :expenses="expenses"
-      v-model:model-period-type="selectedPeriodType"
-      v-model:model-month="selectedMonth"
-      v-model:model-year="selectedYear"
-    />
+    <!-- Loading State -->
+    <div v-if="loadingExpenses" class="d-flex justify-center align-center py-8">
+      <v-progress-circular indeterminate size="64" />
+    </div>
+    
+    <template v-else>
+      <!-- Time Period Filter -->
+      <PeriodFilter
+        :expenses="expenses"
+        v-model:model-period-type="selectedPeriodType"
+        v-model:model-month="selectedMonth"
+        v-model:model-year="selectedYear"
+      />
 
-    <!-- Summary Stats -->
-    <SummaryStats
-      :total="periodTotal"
-      :count="periodExpenses.length"
-      :period-label="periodLabel"
-    />
+      <!-- Summary Stats -->
+      <SummaryStats
+        :total="periodTotal"
+        :count="periodExpenses.length"
+        :period-label="periodLabel"
+      />
 
-    <!-- Category Breakdown Chart -->
-    <CategoryChart :expenses="periodExpenses" />
+      <!-- Category Breakdown Chart -->
+      <CategoryChart :expenses="periodExpenses" />
 
-    <!-- Monthly Trend Chart (only show for year view) -->
-    <TrendChart
-      :expenses="periodExpenses"
-      :year="selectedYear"
-      :show-chart="selectedPeriodType === 'year'"
-    />
+      <!-- Monthly Trend Chart (only show for year view) -->
+      <TrendChart
+        :expenses="periodExpenses"
+        :year="selectedYear"
+        :show-chart="selectedPeriodType === 'year'"
+      />
 
-    <!-- Category Details -->
-    <CategoryDetails :expenses="periodExpenses" />
+      <!-- Category Details -->
+      <CategoryDetails :expenses="periodExpenses" />
 
-    <!-- Empty State -->
-    <EmptyState
-      v-if="periodExpenses.length === 0"
-      :period-label="periodLabel"
-    />
+      <!-- Empty State -->
+      <EmptyState
+        v-if="periodExpenses.length === 0"
+        :period-label="periodLabel"
+      />
+    </template>
   </div>
 </template>
 
@@ -46,8 +53,12 @@ import SummaryStats from './charts/SummaryStats.vue'
 import EmptyState from './charts/EmptyState.vue'
 import { type Expense, type ChartProps } from '../types'
 
-const props = withDefaults(defineProps<{ allExpenses?: Expense[] }>(), {
-  allExpenses: () => []
+const props = withDefaults(defineProps<{ 
+  allExpenses?: Expense[]
+  loadingExpenses?: boolean 
+}>(), {
+  allExpenses: () => [],
+  loadingExpenses: false
 })
 
 // Use allExpenses prop instead of expenses
