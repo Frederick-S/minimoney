@@ -1,1 +1,0 @@
-// This file has been migrated to Vue. See App.vue instead.
