@@ -77,28 +77,10 @@
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useCategories, type CategoryKey } from '../composables/useCategories'
+import { type Expense, type ExpenseFormProps, type ExpenseFormEmits } from '../types'
 
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note?: string
-}
-
-interface Props {
-  modelValue: boolean
-  expense?: Expense | null
-}
-
-interface Emits {
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'save', expense: Omit<Expense, 'id'>): void
-  (e: 'update', expense: Expense): void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<ExpenseFormProps>()
+const emit = defineEmits<ExpenseFormEmits>()
 
 const { supabase } = useSupabase()
 const { CATEGORY_OPTIONS } = useCategories()

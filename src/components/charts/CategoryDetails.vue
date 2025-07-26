@@ -42,20 +42,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCategories, type CategoryKey } from '../../composables/useCategories'
+import { type Expense, type ChartProps } from '../../types'
 
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note?: string
-}
-
-interface Props {
-  expenses: Expense[]
-}
-
-const props = defineProps<Props>()
+const props = defineProps<ChartProps>()
 
 const { getCategoryName, getCategoryColor } = useCategories()
 

@@ -15,13 +15,9 @@
 </template>
 
 <script setup lang="ts">
-interface Props {
-  total: number
-  count: number
-  periodLabel: string
-}
+import { type SummaryStatsProps } from '../../types'
 
-defineProps<Props>()
+defineProps<SummaryStatsProps>()
 
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('zh-CN', {

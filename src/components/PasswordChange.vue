@@ -70,19 +70,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useSupabase } from '@/composables/useSupabase'
+import { ref, watch, computed } from 'vue'
+import { useSupabase } from '../composables/useSupabase'
+import { type PasswordChangeProps, type PasswordChangeEmits } from '../types'
 
-interface Props {
-  modelValue: boolean
-}
-
-interface Emits {
-  (e: 'update:modelValue', value: boolean): void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<PasswordChangeProps>()
+const emit = defineEmits<PasswordChangeEmits>()
 
 const { updatePassword } = useSupabase()
 

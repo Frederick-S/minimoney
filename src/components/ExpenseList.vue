@@ -58,25 +58,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCategories, type CategoryKey } from '../composables/useCategories'
+import { type Expense, type ExpenseListProps, type ExpenseListEmits } from '../types'
 
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note?: string
-}
-
-interface Props {
-  expenses: Expense[]
-}
-
-interface Emits {
-  (e: 'edit', expense: Expense): void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<ExpenseListProps>()
+const emit = defineEmits<ExpenseListEmits>()
 
 const { getCategoryName, getCategoryColor } = useCategories()
 

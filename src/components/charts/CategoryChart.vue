@@ -23,22 +23,11 @@ import {
   DoughnutController
 } from 'chart.js'
 import { useCategories, type CategoryKey } from '../../composables/useCategories'
+import { type Expense, type ChartProps } from '../../types'
 
 Chart.register(ArcElement, Title, Tooltip, Legend, DoughnutController)
 
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note?: string
-}
-
-interface Props {
-  expenses: Expense[]
-}
-
-const props = defineProps<Props>()
+const props = defineProps<ChartProps>()
 const chartRef = ref<HTMLCanvasElement>()
 let chart: Chart | null = null
 

@@ -38,26 +38,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import PeriodFilter from './charts/PeriodFilter.vue'
-import SummaryStats from './charts/SummaryStats.vue'
 import CategoryChart from './charts/CategoryChart.vue'
 import TrendChart from './charts/TrendChart.vue'
 import CategoryDetails from './charts/CategoryDetails.vue'
+import PeriodFilter from './charts/PeriodFilter.vue'
+import SummaryStats from './charts/SummaryStats.vue'
 import EmptyState from './charts/EmptyState.vue'
+import { type Expense, type ExpenseListProps } from '../types'
 
-interface Expense {
-  id: string
-  amount: number
-  category: string
-  date: string
-  note?: string
-}
-
-interface Props {
-  expenses: Expense[]
-}
-
-const props = defineProps<Props>()
+const props = defineProps<ExpenseListProps>()
 
 const selectedPeriodType = ref<'month' | 'year'>('month')
 const selectedMonth = ref('')

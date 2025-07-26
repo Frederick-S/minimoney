@@ -11,9 +11,7 @@
 </template>
 
 <script setup lang="ts">
-interface Props {
-  periodLabel: string
-}
+import { type EmptyStateProps } from '../../types'
 
-defineProps<Props>()
+defineProps<EmptyStateProps>()
 </script>

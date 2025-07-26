@@ -68,16 +68,7 @@ import ExpenseList from './components/ExpenseList.vue'
 import ChartsView from './components/ChartsView.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
-import { type CategoryKey } from './composables/useCategories'
-
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note: string
-  user_id?: string
-}
+import { type Expense } from './types'
 
 const { user, loading, signOut, initAuth, supabase } = useSupabase()
 

@@ -43,30 +43,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { type CategoryKey } from '../../composables/useCategories'
+import { type Expense, type PeriodFilterProps, type PeriodFilterEmits } from '../../types'
 
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note?: string
-}
-
-interface Props {
-  expenses: Expense[]
-  modelPeriodType: 'month' | 'year'
-  modelMonth: string
-  modelYear: string
-}
-
-interface Emits {
-  (e: 'update:modelPeriodType', value: 'month' | 'year'): void
-  (e: 'update:modelMonth', value: string): void
-  (e: 'update:modelYear', value: string): void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<PeriodFilterProps>()
+const emit = defineEmits<PeriodFilterEmits>()
 
 const periodType = computed({
   get: () => props.modelPeriodType,

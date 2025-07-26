@@ -25,24 +25,11 @@ import {
   LineController
 } from 'chart.js'
 import { type CategoryKey } from '../../composables/useCategories'
+import { type Expense, type TrendChartProps } from '../../types'
 
 Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, LineController)
 
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note?: string
-}
-
-interface Props {
-  expenses: Expense[]
-  year: string
-  showChart: boolean
-}
-
-const props = defineProps<Props>()
+const props = defineProps<TrendChartProps>()
 const chartRef = ref<HTMLCanvasElement>()
 let chart: Chart | null = null
 

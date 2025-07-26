@@ -12,20 +12,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { type CategoryKey } from '../composables/useCategories'
+import { type Expense, type ExpenseListProps } from '../types'
 
-interface Expense {
-  id: string
-  amount: number
-  category: CategoryKey
-  date: string
-  note?: string
-}
-
-interface Props {
-  expenses: Expense[]
-}
-
-const props = defineProps<Props>()
+const props = defineProps<ExpenseListProps>()
 
 const todayTotal = computed(() => {
   const today = new Date().toDateString()

@@ -21,17 +21,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { type BottomNavigationProps, type BottomNavigationEmits } from '../types'
 
-interface Props {
-  modelValue: string
-}
-
-interface Emits {
-  (e: 'update:modelValue', value: string): void
-}
-
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<BottomNavigationProps>()
+const emit = defineEmits<BottomNavigationEmits>()
 
 const activeTab = computed({
   get: () => props.modelValue,
