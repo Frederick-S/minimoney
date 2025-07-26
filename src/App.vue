@@ -13,11 +13,10 @@
       <div class="px-4 pb-24">
         <!-- Summary Dashboard -->
         <div class="py-4">
-          <SummaryDashboard 
-            :expenses="expenses"
-            :selected-period="selectedPeriod"
-            @period-change="setSelectedPeriod"
-          />
+          <div class="bg-card rounded-xl p-4 shadow-sm border">
+            <h2 class="text-lg font-semibold mb-2">今日支出</h2>
+            <p class="text-2xl font-bold text-foreground">{{ formatAmount(todayTotal) }}</p>
+          </div>
         </div>
 
         <!-- Recent Expenses -->
@@ -36,133 +35,155 @@
             </p>
           </div>
           
-          <TransitionGroup v-else name="expense" tag="div" class="space-y-2">
-            <ExpenseCard
-              v-for="expense in sortedExpenses"
+          <div v-else class="space-y-2">
+            <div 
+              v-for="expense in sortedExpenses" 
               :key="expense.id"
-              :expense="expense"
-              @edit="handleEditExpense"
-              @delete="handleDeleteExpense"
-            />
-          </TransitionGroup>
+              class="bg-card rounded-lg p-4 border shadow-sm"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-xs font-medium">
+                      {{ categoryNames[expense.category] }}
+                    </span>
+                    <span class="text-sm text-muted-foreground">
+                      {{ new Date(expense.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) }}
+                    </span>
+                  </div>
+                  <p class="text-lg font-semibold text-foreground">
+                    {{ formatAmount(expense.amount) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Floating Action Button -->
-      <FloatingActionButton @click="handleOpenForm" />
+      <div class="fixed bottom-6 right-6">
+        <button 
+          class="bg-primary text-primary-foreground rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+          @click="showForm = true"
+        >
+          <span class="text-2xl">+</span>
+        </button>
+      </div>
 
-      <!-- Expense Form -->
-      <ExpenseForm
-        :is-open="isFormOpen"
-        :editing-expense="editingExpense"
-        @close="handleCloseForm"
-        @save="handleSaveExpense"
-      />
+      <!-- Simple Form Modal -->
+      <div v-if="showForm" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50" @click="showForm = false">
+        <div 
+          class="w-full max-w-md bg-background rounded-t-3xl p-6 h-[80vh] flex flex-col"
+          @click.stop
+        >
+          <div class="pb-6">
+            <h2 class="text-xl font-semibold">添加支出</h2>
+          </div>
+
+          <div class="space-y-6 flex-1">
+            <div class="space-y-2">
+              <label class="text-base font-medium">金额 *</label>
+              <input 
+                type="number" 
+                v-model="amount"
+                class="w-full border border-input rounded-md px-3 py-2 bg-background"
+                placeholder="0.00"
+              />
+            </div>
+            
+            <div class="space-y-2">
+              <label class="text-base font-medium">分类</label>
+              <select 
+                v-model="category"
+                class="w-full border border-input rounded-md px-3 py-2 bg-background"
+              >
+                <option value="Food">餐饮</option>
+                <option value="Transport">交通</option>
+                <option value="Shopping">购物</option>
+                <option value="Entertainment">娱乐</option>
+                <option value="Other">其他</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-6">
+            <button 
+              @click="showForm = false"
+              class="flex-1 py-3 px-4 border border-input rounded-md text-foreground hover:bg-muted"
+            >
+              取消
+            </button>
+            <button 
+              @click="saveExpense"
+              class="flex-1 py-3 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-    
-    <!-- Toast Notifications -->
-    <Toaster />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useKV } from './hooks/useKV'
-import { toast } from 'vue-sonner'
-import { Toaster } from 'vue-sonner'
-import ExpenseCard from './components/ExpenseCard.vue'
-import ExpenseForm from './components/ExpenseForm.vue'
-import SummaryDashboard from './components/SummaryDashboard.vue'
-import FloatingActionButton from './components/FloatingActionButton.vue'
 
 interface Expense {
   id: string
   amount: number
   category: string
-  note?: string
   date: string
 }
 
 const [expenses, setExpenses] = useKV<Expense[]>("expenses", [])
-const isFormOpen = ref(false)
-const editingExpense = ref<Expense | null>(null)
-const selectedPeriod = ref<'day' | 'week' | 'month'>('day')
+const showForm = ref(false)
+const amount = ref('')
+const category = ref('Food')
 
-const handleSaveExpense = (expenseData: Omit<Expense, 'id'>) => {
-  if (editingExpense.value) {
-    setExpenses((currentExpenses: Expense[]) => 
-      currentExpenses.map(expense => 
-        expense.id === editingExpense.value!.id 
-          ? { ...expenseData, id: editingExpense.value!.id }
-          : expense
-      )
-    )
-    toast.success("支出已更新")
-    editingExpense.value = null
-  } else {
-    const newExpense: Expense = {
-      ...expenseData,
-      id: Date.now().toString()
-    }
-    setExpenses((currentExpenses: Expense[]) => [newExpense, ...currentExpenses])
-    toast.success("支出已添加")
+const saveExpense = () => {
+  if (!amount.value) return
+  
+  const newExpense: Expense = {
+    id: Date.now().toString(),
+    amount: parseFloat(amount.value),
+    category: category.value,
+    date: new Date().toISOString()
   }
-  isFormOpen.value = false
+  
+  setExpenses((currentExpenses: Expense[]) => [newExpense, ...currentExpenses])
+  
+  showForm.value = false
+  amount.value = ''
 }
 
-const handleEditExpense = (expense: Expense) => {
-  editingExpense.value = expense
-  isFormOpen.value = true
+const todayTotal = computed(() => {
+  const today = new Date().toDateString()
+  return expenses.value
+    .filter(expense => new Date(expense.date).toDateString() === today)
+    .reduce((total, expense) => total + expense.amount, 0)
+})
+
+const formatAmount = (amount: number) => {
+  return new Intl.NumberFormat('zh-CN', {
+    style: 'currency',
+    currency: 'CNY'
+  }).format(amount)
 }
 
-const handleDeleteExpense = (id: string) => {
-  setExpenses((currentExpenses: Expense[]) => 
-    currentExpenses.filter(expense => expense.id !== id)
-  )
-  toast.success("支出已删除")
-}
-
-const handleOpenForm = () => {
-  editingExpense.value = null
-  isFormOpen.value = true
-}
-
-const handleCloseForm = () => {
-  isFormOpen.value = false
-  editingExpense.value = null
-}
-
-const setSelectedPeriod = (period: 'day' | 'week' | 'month') => {
-  selectedPeriod.value = period
+const categoryNames: Record<string, string> = {
+  Food: '餐饮',
+  Transport: '交通',
+  Shopping: '购物',
+  Entertainment: '娱乐',
+  Other: '其他'
 }
 
 const sortedExpenses = computed(() => 
   [...expenses.value].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
-  )
+  ).slice(0, 10) // Show only last 10 expenses
 )
 </script>
-
-<style scoped>
-.expense-move,
-.expense-enter-active,
-.expense-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.expense-enter-from {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.expense-leave-to {
-  opacity: 0;
-  transform: translateX(100%);
-}
-
-.expense-leave-active {
-  position: absolute;
-  right: 16px;
-  left: 16px;
-}
-</style>

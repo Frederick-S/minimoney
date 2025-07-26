@@ -58,9 +58,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Card } from "@/components/ui/card.vue"
+import Card from "@/components/ui/card.vue"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs-index"
-import { Badge } from "@/components/ui/badge.vue"
+import Badge from "@/components/ui/badge.vue"
 
 interface Expense {
   id: string

@@ -49,9 +49,9 @@
 </template>
 
 <script setup lang="ts">
-import { Card } from "@/components/ui/card.vue"
-import { Badge } from "@/components/ui/badge.vue"
-import { Button } from "@/components/ui/button.vue"
+import Card from "@/components/ui/card.vue"
+import Badge from "@/components/ui/badge.vue"
+import Button from "@/components/ui/button.vue"
 import { Trash2, Edit } from "@phosphor-icons/vue"
 
 interface Expense {

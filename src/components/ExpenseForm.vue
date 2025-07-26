@@ -97,10 +97,10 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Button } from "@/components/ui/button.vue"
-import { Input } from "@/components/ui/input.vue"
-import { Label } from "@/components/ui/label.vue"
-import { Textarea } from "@/components/ui/textarea.vue"
+import Button from "@/components/ui/button.vue"
+import Input from "@/components/ui/input.vue"
+import Label from "@/components/ui/label.vue"
+import Textarea from "@/components/ui/textarea.vue"
 import { Check } from "@phosphor-icons/vue"
 
 interface Expense {

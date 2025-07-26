@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from "@/components/ui/button.vue"
+import Button from "@/components/ui/button.vue"
 import { Plus } from "@phosphor-icons/vue"
 
 defineEmits<{
