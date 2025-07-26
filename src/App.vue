@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useSupabase } from './composables/useSupabase'
 import Auth from './components/Auth.vue'
 import AppHeader from './components/AppHeader.vue'
@@ -83,6 +83,17 @@ onMounted(async () => {
   await initAuth()
   if (user.value) {
     await loadExpenses()
+  }
+})
+
+// Watch for user authentication changes
+watch(user, async (newUser, oldUser) => {
+  if (newUser && !oldUser) {
+    // User just logged in, load their expenses
+    await loadExpenses()
+  } else if (!newUser && oldUser) {
+    // User just logged out, clear expenses
+    expenses.value = []
   }
 })
 
@@ -128,7 +139,7 @@ const saveExpense = async (expense: Omit<Expense, 'id'>) => {
 
 const handleLogout = async () => {
   await signOut()
-  expenses.value = []
+  // expenses will be cleared automatically by the user watcher
 }
 </script>
 
