@@ -13,7 +13,7 @@
         >
           <template v-slot:prepend>
             <v-avatar
-              :color="getCategoryColor(category)"
+              :color="getCategoryColor(category as CategoryKey)"
               size="small"
               class="mr-3"
             >
@@ -24,7 +24,7 @@
           </template>
           
           <v-list-item-title class="font-weight-medium">
-            {{ categoryNames[category] }}
+            {{ getCategoryName(category as CategoryKey) }}
           </v-list-item-title>
           
           <template v-slot:append>
@@ -41,11 +41,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useCategories, type CategoryKey } from '../../composables/useCategories'
 
 interface Expense {
   id: string
   amount: number
-  category: string
+  category: CategoryKey
   date: string
   note?: string
 }
@@ -56,24 +57,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const categoryNames: Record<string, string> = {
-  Food: '餐饮',
-  Transport: '交通',
-  Shopping: '购物',
-  Entertainment: '娱乐',
-  Other: '其他'
-}
-
-const getCategoryColor = (category: string) => {
-  const colors: Record<string, string> = {
-    Food: 'orange',
-    Transport: 'blue',
-    Shopping: 'pink',
-    Entertainment: 'purple',
-    Other: 'grey'
-  }
-  return colors[category] || 'grey'
-}
+const { getCategoryName, getCategoryColor } = useCategories()
 
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('zh-CN', {
@@ -83,7 +67,7 @@ const formatAmount = (amount: number) => {
 }
 
 const categoryBreakdown = computed(() => {
-  const breakdown: Record<string, { amount: number; count: number; percentage: number }> = {}
+  const breakdown: Record<CategoryKey, { amount: number; count: number; percentage: number }> = {} as any
   
   props.expenses.forEach(expense => {
     if (!breakdown[expense.category]) {
@@ -95,14 +79,16 @@ const categoryBreakdown = computed(() => {
   
   const total = props.expenses.reduce((sum, exp) => sum + exp.amount, 0)
   Object.keys(breakdown).forEach(category => {
-    breakdown[category].percentage = total > 0 ? (breakdown[category].amount / total) * 100 : 0
+    const cat = category as CategoryKey
+    breakdown[cat].percentage = total > 0 ? (breakdown[cat].amount / total) * 100 : 0
   })
   
-  const sortedBreakdown: Record<string, any> = {}
+  // Sort by amount descending
+  const sortedBreakdown: Record<CategoryKey, any> = {} as any
   Object.entries(breakdown)
     .sort(([,a], [,b]) => b.amount - a.amount)
     .forEach(([category, data]) => {
-      sortedBreakdown[category] = data
+      sortedBreakdown[category as CategoryKey] = data
     })
   
   return sortedBreakdown

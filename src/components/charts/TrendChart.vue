@@ -24,13 +24,14 @@ import {
   Tooltip,
   LineController
 } from 'chart.js'
+import { type CategoryKey } from '../../composables/useCategories'
 
 Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, LineController)
 
 interface Expense {
   id: string
   amount: number
-  category: string
+  category: CategoryKey
   date: string
   note?: string
 }

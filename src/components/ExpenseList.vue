@@ -26,7 +26,7 @@
                   size="small"
                   variant="flat"
                 >
-                  {{ categoryNames[expense.category] }}
+                  {{ getCategoryName(expense.category) }}
                 </v-chip>
                 <span class="text-caption text-medium-emphasis">
                   {{ new Date(expense.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) }}
@@ -57,11 +57,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useCategories, type CategoryKey } from '../composables/useCategories'
 
 interface Expense {
   id: string
   amount: number
-  category: string
+  category: CategoryKey
   date: string
   note?: string
 }
@@ -77,24 +78,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const categoryNames: Record<string, string> = {
-  Food: '餐饮',
-  Transport: '交通',
-  Shopping: '购物',
-  Entertainment: '娱乐',
-  Other: '其他'
-}
-
-const getCategoryColor = (category: string) => {
-  const colors: Record<string, string> = {
-    Food: 'orange',
-    Transport: 'blue',
-    Shopping: 'pink',
-    Entertainment: 'purple',
-    Other: 'grey'
-  }
-  return colors[category] || 'grey'
-}
+const { getCategoryName, getCategoryColor } = useCategories()
 
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('zh-CN', {

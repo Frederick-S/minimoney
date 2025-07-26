@@ -58,21 +58,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useSupabase } from './composables/useSupabase'
-import Auth from './components/Auth.vue'
 import AppHeader from './components/AppHeader.vue'
+import Auth from './components/Auth.vue'
 import TodaySummary from './components/TodaySummary.vue'
+import ExpenseForm from './components/ExpenseForm.vue'
 import ExpenseList from './components/ExpenseList.vue'
 import ChartsView from './components/ChartsView.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
-import ExpenseForm from './components/ExpenseForm.vue'
 import PasswordChange from './components/PasswordChange.vue'
+import { type CategoryKey } from './composables/useCategories'
 
 interface Expense {
   id: string
   amount: number
-  category: string
+  category: CategoryKey
   date: string
   note: string
   user_id?: string

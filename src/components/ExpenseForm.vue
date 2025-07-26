@@ -74,12 +74,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, defineProps, defineEmits } from 'vue'
+import { useSupabase } from '../composables/useSupabase'
+import { useCategories, type CategoryKey } from '../composables/useCategories'
 
 interface Expense {
   id: string
   amount: number
-  category: string
+  category: CategoryKey
   date: string
   note?: string
 }
@@ -98,25 +100,22 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { supabase } = useSupabase()
+const { CATEGORY_OPTIONS } = useCategories()
+
 const showForm = ref(props.modelValue)
 const amount = ref('')
-const category = ref('Food')
+const category = ref<CategoryKey>('Food')
 const note = ref('')
 
-const categoryOptions = [
-  { text: '餐饮', value: 'Food' },
-  { text: '交通', value: 'Transport' },
-  { text: '购物', value: 'Shopping' },
-  { text: '娱乐', value: 'Entertainment' },
-  { text: '其他', value: 'Other' }
-]
+const categoryOptions = CATEGORY_OPTIONS
 
 watch(() => props.modelValue, (newValue) => {
   showForm.value = newValue
   if (newValue && props.expense) {
     // Populate form with existing expense data
     amount.value = props.expense.amount.toString()
-    category.value = props.expense.category
+    category.value = props.expense.category as CategoryKey
     note.value = props.expense.note || ''
   }
 })
@@ -124,7 +123,7 @@ watch(() => props.modelValue, (newValue) => {
 watch(() => props.expense, (newExpense) => {
   if (newExpense) {
     amount.value = newExpense.amount.toString()
-    category.value = newExpense.category
+    category.value = newExpense.category as CategoryKey
     note.value = newExpense.note || ''
   }
 })

@@ -42,11 +42,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { type CategoryKey } from '../../composables/useCategories'
 
 interface Expense {
   id: string
   amount: number
-  category: string
+  category: CategoryKey
   date: string
   note?: string
 }
