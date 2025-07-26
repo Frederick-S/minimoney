@@ -62,7 +62,7 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
-const { loadAllExpenses } = useExpenseManagement()
+const { loadAllExpenses, refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
 
 const expenses = ref<Expense[]>([])
 const loadingExpenses = ref(false)
@@ -99,7 +99,7 @@ watch(() => route.name, async (newRouteName) => {
 })
 
 // Watch for refresh trigger
-watch(() => props.refreshTrigger, async () => {
+watch([() => props.refreshTrigger, globalRefreshTrigger], async () => {
   await loadExpensesData()
 })
 

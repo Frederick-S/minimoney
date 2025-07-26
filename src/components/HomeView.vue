@@ -45,7 +45,7 @@ const props = withDefaults(defineProps<HomeViewProps>(), {
 const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
-const { refreshTrigger } = useExpenseManagement()
+const { refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
 
 const expenses = ref<Expense[]>([])
 const currentPage = ref(0)
@@ -139,7 +139,8 @@ watch(user, async (newUser, oldUser) => {
 })
 
 // Watch for expense changes (when new expense is added or updated)
-watch([() => props.refreshTrigger, refreshTrigger], async () => {
+watch([() => props.refreshTrigger, globalRefreshTrigger], async () => {
+  console.log('HomeView refresh triggered, globalRefreshTrigger:', globalRefreshTrigger.value)
   if (user.value) {
     await loadExpenses(true)
   }

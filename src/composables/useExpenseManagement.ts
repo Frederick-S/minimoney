@@ -2,9 +2,11 @@ import { ref } from 'vue'
 import { useSupabase } from './useSupabase'
 import { type Expense } from '../types'
 
+// Global singleton state for expense management
+const refreshTrigger = ref(0)
+
 export function useExpenseManagement() {
   const { user, supabase } = useSupabase()
-  const refreshTrigger = ref(0)
 
   // Save expense to Supabase
   const saveExpense = async (expense: Omit<Expense, 'id'>) => {
@@ -27,6 +29,7 @@ export function useExpenseManagement() {
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
+      console.log('Expense saved, refreshTrigger:', refreshTrigger.value)
       return data
     }
   }
@@ -53,6 +56,7 @@ export function useExpenseManagement() {
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
+      console.log('Expense updated, refreshTrigger:', refreshTrigger.value)
       return data
     }
   }
