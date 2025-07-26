@@ -1,1 +1,0 @@
-// Cleaned up - see components directory for Vue implementation
