@@ -25,6 +25,12 @@
             <v-list-item-title>{{ user?.email }}</v-list-item-title>
           </v-list-item>
           <v-divider />
+          <v-list-item @click="$emit('changePassword')">
+            <v-list-item-title>
+              <v-icon start>mdi-lock-reset</v-icon>
+              修改密码
+            </v-list-item-title>
+          </v-list-item>
           <v-list-item @click="$emit('logout')">
             <v-list-item-title>
               <v-icon start>mdi-logout</v-icon>
@@ -46,5 +52,6 @@ defineProps<{
 
 defineEmits<{
   logout: []
+  changePassword: []
 }>()
 </script>

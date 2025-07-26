@@ -12,7 +12,7 @@
       <!-- Main App (Authenticated) -->
       <v-container v-else class="pa-0 max-w-md mx-auto" fluid>
         <!-- Header -->
-        <AppHeader :user="user" @logout="handleLogout" />
+        <AppHeader :user="user" @logout="handleLogout" @change-password="showPasswordChange = true" />
 
         <!-- Main Content Area -->
         <div class="content-area">
@@ -47,6 +47,9 @@
           v-model="showForm" 
           @save="saveExpense"
         />
+
+        <!-- Password Change Dialog -->
+        <PasswordChange v-model="showPasswordChange" />
       </v-container>
     </v-main>
   </v-app>
@@ -62,6 +65,7 @@ import ExpenseList from './components/ExpenseList.vue'
 import ChartsView from './components/ChartsView.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import ExpenseForm from './components/ExpenseForm.vue'
+import PasswordChange from './components/PasswordChange.vue'
 
 interface Expense {
   id: string
@@ -76,6 +80,7 @@ const { user, loading, signOut, initAuth, supabase } = useSupabase()
 
 const activeTab = ref('home')
 const showForm = ref(false)
+const showPasswordChange = ref(false)
 const expenses = ref<Expense[]>([])
 
 // Initialize auth on app load

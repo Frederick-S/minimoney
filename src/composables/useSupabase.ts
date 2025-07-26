@@ -34,6 +34,13 @@ export function useSupabase() {
     return { error }
   }
 
+  const updatePassword = async (newPassword: string) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+    return { data, error }
+  }
+
   const initAuth = async () => {
     loading.value = true
     
@@ -60,6 +67,7 @@ export function useSupabase() {
     signUp,
     signIn,
     signOut,
+    updatePassword,
     initAuth,
   }
 }
