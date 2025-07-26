@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="text-h6 font-weight-medium mb-4">最近支出</h2>
+    <h2 class="text-h6 font-weight-medium mb-4 mt-6">最近支出</h2>
     
     <div v-if="sortedExpenses.length === 0" class="text-center py-12">
       <div class="text-h1 mb-4">💸</div>

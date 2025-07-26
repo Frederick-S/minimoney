@@ -6,29 +6,29 @@
         <AppHeader />
 
         <!-- Main Content Area -->
-        <div class="content-area pb-16">
+        <div class="content-area">
           <!-- Home Tab Content -->
-          <div v-if="activeTab === 'home'">
+          <div v-if="activeTab === 'home'" class="px-4">
             <TodaySummary :expenses="expenses" />
             <ExpenseList :expenses="expenses" />
           </div>
 
           <!-- Charts Tab Content -->
-          <div v-if="activeTab === 'charts'">
+          <div v-if="activeTab === 'charts'" class="px-4">
             <ChartsView :expenses="expenses" />
           </div>
         </div>
 
         <!-- Floating Action Button (only show on home tab) -->
-        <v-fab
-          v-if="activeTab === 'home'"
-          location="bottom end"
-          size="56"
-          color="primary"
-          icon="mdi-plus"
-          class="mb-20 me-4"
-          @click="showForm = true"
-        />
+        <div v-if="activeTab === 'home'" class="fixed-fab">
+          <v-fab
+            location="bottom center"
+            size="56"
+            color="primary"
+            icon="mdi-plus"
+            @click="showForm = true"
+          />
+        </div>
 
         <!-- Bottom Navigation -->
         <BottomNavigation v-model="activeTab" />
@@ -77,5 +77,14 @@ const saveExpense = (expense: Omit<Expense, 'id'>) => {
 <style scoped>
 .content-area {
   min-height: calc(100vh - 64px - 56px); /* Subtract header and bottom nav height */
+  padding-bottom: 120px; /* Extra space for floating button */
+}
+
+.fixed-fab {
+  position: fixed;
+  bottom: 72px; /* 56px (bottom nav) + 16px spacing */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
 }
 </style>
