@@ -37,11 +37,17 @@ const router = createRouter({
 
 // Route guard for authentication
 router.beforeEach(async (to, from, next) => {
-  const { user, initAuth } = useSupabase()
+  const { user, loading, initAuth } = useSupabase()
   
   // Initialize auth if not already done
-  if (user.value === undefined) {
+  if (loading.value) {
     await initAuth()
+  }
+  
+  // Wait for auth initialization to complete
+  if (loading.value) {
+    // Still loading, wait a bit more
+    return next(false)
   }
   
   // Check if route requires authentication
