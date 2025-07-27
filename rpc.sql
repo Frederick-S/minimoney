@@ -1,6 +1,23 @@
--- RPC functions for chart aggregations to reduce client-side calculations
+-- RPC (Remote Procedure Call) functions for MiniMoney expense tracking app
+-- These functions provide server-side aggregation to reduce client-side calculations
 
--- 1. Get category breakdown for a specific period
+-- 1. Get today's expenses sum for a specific user and date
+CREATE OR REPLACE FUNCTION get_today_expenses_sum(
+  p_user_id UUID,
+  p_date DATE
+) RETURNS NUMERIC AS $$
+BEGIN
+  RETURN COALESCE(
+    (SELECT SUM(amount) 
+     FROM expenses 
+     WHERE user_id = p_user_id 
+       AND date::date = p_date),
+    0
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Get category breakdown for a specific period
 CREATE OR REPLACE FUNCTION get_category_breakdown(
   p_user_id UUID,
   p_start_date DATE,
@@ -40,7 +57,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Get monthly trend data for a specific year
+-- 3. Get monthly trend data for a specific year
 CREATE OR REPLACE FUNCTION get_monthly_trend(
   p_user_id UUID,
   p_year INTEGER
@@ -84,7 +101,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. Get period summary (total amount and count)
+-- 4. Get period summary (total amount and count)
 CREATE OR REPLACE FUNCTION get_period_summary(
   p_user_id UUID,
   p_start_date DATE,
@@ -105,7 +122,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. Get expenses for a specific period (still needed for some components)
+-- 5. Get expenses for a specific period (still needed for some components)
 CREATE OR REPLACE FUNCTION get_period_expenses(
   p_user_id UUID,
   p_start_date DATE,
