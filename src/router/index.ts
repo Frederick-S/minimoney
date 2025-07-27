@@ -44,12 +44,22 @@ router.beforeEach(async (to, from, next) => {
     await initAuth()
   }
   
+  console.log('Router guard:', { 
+    to: to.path, 
+    from: from.path, 
+    user: user.value?.id || 'no user',
+    requiresAuth: to.meta.requiresAuth 
+  })
+  
   // Check if route requires authentication
   if (to.meta.requiresAuth && !user.value) {
+    console.log('Redirecting to login - no user for protected route')
     next('/login')
   } else if (to.path === '/login' && user.value) {
+    console.log('Redirecting to home - user already authenticated')
     next('/home')
   } else {
+    console.log('Allowing navigation')
     next()
   }
 })

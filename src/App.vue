@@ -7,17 +7,23 @@
       </div>
 
       <!-- Main App -->
-      <v-container v-else class="pa-0 max-w-md mx-auto" fluid>
-        <!-- Header (only show if user is authenticated) -->
+      <v-container v-else class="pa-0 max-w-md mx-auto d-flex flex-column" fluid style="min-height: 100vh;">
+        <!-- Header (only show if user is authenticated and not on login page) -->
         <AppHeader 
-          v-if="user" 
+          v-if="user && $route.name !== 'Login'" 
           :user="user" 
           @logout="handleLogout" 
           @change-password="showPasswordChange = true" 
         />
 
         <!-- Main Content Area -->
-        <div class="content-area">
+        <div 
+          class="content-area flex-grow-1" 
+          :class="{
+            'd-flex flex-column justify-center': $route.name === 'Login',
+            'overflow-auto': $route.name !== 'Login'
+          }"
+        >
           <router-view 
             :refresh-trigger="refreshTrigger"
             @edit="handleEditExpense"
@@ -35,8 +41,8 @@
           />
         </div>
 
-        <!-- Bottom Navigation (only show if authenticated) -->
-        <BottomNavigation v-if="user" />
+        <!-- Bottom Navigation (only show if authenticated and not on login page) -->
+        <BottomNavigation v-if="user && $route.name !== 'Login'" />
 
         <!-- Expense Form Dialog (only show if authenticated) -->
         <ExpenseFormManager 
@@ -93,8 +99,17 @@ const handleEditExpense = (expense: Expense) => {
 
 <style scoped>
 .content-area {
-  min-height: calc(100vh - 64px - 56px); /* Subtract header and bottom nav height */
+  min-height: 0; /* Allow flex item to shrink */
+}
+
+/* For authenticated pages - normal scroll behavior */
+.content-area.overflow-auto {
   padding-bottom: 120px; /* Extra space for floating button */
+}
+
+/* For login page - center content vertically */
+.content-area.d-flex.justify-center {
+  padding: 2rem;
 }
 
 .fixed-fab {
