@@ -8,7 +8,6 @@
     <template v-else>
       <!-- Time Period Filter -->
       <PeriodFilter
-        :expenses="expenses"
         v-model:model-period-type="selectedPeriodType"
         v-model:model-month="selectedMonth"
         v-model:model-year="selectedYear"
@@ -16,27 +15,27 @@
 
       <!-- Summary Stats -->
       <SummaryStats
-        :total="periodTotal"
-        :count="periodExpenses.length"
+        :total="periodSummary?.total_amount || 0"
+        :count="periodSummary?.expense_count || 0"
         :period-label="periodLabel"
       />
 
       <!-- Category Breakdown Chart -->
-      <CategoryChart :expenses="periodExpenses" />
+      <CategoryChart :category-data="categoryBreakdown" />
 
       <!-- Monthly Trend Chart (only show for year view) -->
       <TrendChart
-        :expenses="periodExpenses"
+        :trend-data="monthlyTrend"
         :year="selectedYear"
         :show-chart="selectedPeriodType === 'year'"
       />
 
       <!-- Category Details -->
-      <CategoryDetails :expenses="periodExpenses" />
+      <CategoryDetails :category-data="categoryBreakdown" />
 
       <!-- Empty State -->
       <EmptyState
-        v-if="periodExpenses.length === 0"
+        v-if="!categoryBreakdown || categoryBreakdown.length === 0"
         :period-label="periodLabel"
       />
     </template>
@@ -53,7 +52,7 @@ import PeriodFilter from './charts/PeriodFilter.vue'
 import SummaryStats from './charts/SummaryStats.vue'
 import EmptyState from './charts/EmptyState.vue'
 import { useExpenseManagement } from '../composables/useExpenseManagement'
-import { type Expense } from '../types'
+import { type CategoryBreakdownData, type MonthlyTrendData, type PeriodSummaryData } from '../types'
 
 const props = withDefaults(defineProps<{ 
   refreshTrigger?: number
@@ -62,20 +61,53 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
-const { loadAllExpenses, refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
+const { getCategoryBreakdown, getMonthlyTrend, getPeriodSummary, refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
 
-const expenses = ref<Expense[]>([])
 const loadingExpenses = ref(false)
 const selectedPeriodType = ref<'month' | 'year'>('month')
 const selectedMonth = ref('')
 const selectedYear = ref('')
 
-// Load all expenses for charts
-const loadExpensesData = async () => {
+// Aggregated data from RPC calls
+const categoryBreakdown = ref<CategoryBreakdownData[]>([])
+const monthlyTrend = ref<MonthlyTrendData[]>([])
+const periodSummary = ref<PeriodSummaryData | null>(null)
+
+// Calculate date range based on selected period
+const dateRange = computed(() => {
+  if (selectedPeriodType.value === 'month') {
+    if (!selectedMonth.value) return null
+    const [year, month] = selectedMonth.value.split('-')
+    const startDate = `${year}-${month}-01`
+    const endDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0]
+    return { startDate, endDate }
+  } else {
+    if (!selectedYear.value) return null
+    const startDate = `${selectedYear.value}-01-01`
+    const endDate = `${selectedYear.value}-12-31`
+    return { startDate, endDate }
+  }
+})
+
+// Load aggregated data using RPC calls
+const loadAggregatedData = async () => {
   loadingExpenses.value = true
   try {
-    const data = await loadAllExpenses()
-    expenses.value = data
+    const range = dateRange.value
+    if (!range) return
+
+    // Load data in parallel
+    const [categoryData, summaryData, trendData] = await Promise.all([
+      getCategoryBreakdown(range.startDate, range.endDate),
+      getPeriodSummary(range.startDate, range.endDate),
+      selectedPeriodType.value === 'year' && selectedYear.value 
+        ? getMonthlyTrend(parseInt(selectedYear.value))
+        : Promise.resolve([])
+    ])
+
+    categoryBreakdown.value = categoryData
+    periodSummary.value = summaryData
+    monthlyTrend.value = trendData
   } finally {
     loadingExpenses.value = false
   }
@@ -86,45 +118,24 @@ onMounted(async () => {
   const now = new Date()
   selectedMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   selectedYear.value = now.getFullYear().toString()
-  
-  // Load data when component mounts
-  await loadExpensesData()
 })
+
+// Watch for period changes to reload data
+watch([selectedPeriodType, selectedMonth, selectedYear], () => {
+  loadAggregatedData()
+}, { immediate: true })
 
 // Watch for route changes to reload data
 watch(() => route.name, async (newRouteName) => {
   if (newRouteName === 'Charts') {
-    await loadExpensesData()
+    await loadAggregatedData()
   }
 })
 
 // Watch for refresh trigger
 watch([() => props.refreshTrigger, globalRefreshTrigger], async () => {
-  await loadExpensesData()
+  await loadAggregatedData()
 })
-
-// Filter expenses based on selected period
-const periodExpenses = computed(() => {
-  if (selectedPeriodType.value === 'month') {
-    if (!selectedMonth.value) return []
-    const [year, month] = selectedMonth.value.split('-')
-    return expenses.value.filter(expense => {
-      const expenseDate = new Date(expense.date)
-      return expenseDate.getFullYear() === parseInt(year) && 
-             expenseDate.getMonth() === parseInt(month) - 1
-    })
-  } else {
-    if (!selectedYear.value) return []
-    return expenses.value.filter(expense => {
-      const expenseDate = new Date(expense.date)
-      return expenseDate.getFullYear() === parseInt(selectedYear.value)
-    })
-  }
-})
-
-const periodTotal = computed(() => 
-  periodExpenses.value.reduce((total, expense) => total + expense.amount, 0)
-)
 
 const periodLabel = computed(() => {
   if (selectedPeriodType.value === 'month') {

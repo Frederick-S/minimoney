@@ -42,8 +42,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { type CategoryKey } from '../../composables/useCategories'
-import { type Expense, type PeriodFilterProps, type PeriodFilterEmits } from '../../types'
+import { type PeriodFilterProps, type PeriodFilterEmits } from '../../types'
 
 const props = defineProps<PeriodFilterProps>()
 const emit = defineEmits<PeriodFilterEmits>()
@@ -63,48 +62,42 @@ const selectedYear = computed({
   set: (value) => emit('update:modelYear', value)
 })
 
+// Generate months for the last 2 years for selection
 const availableMonths = computed(() => {
-  const months = new Set<string>()
-  props.expenses.forEach(expense => {
-    const date = new Date(expense.date)
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-    months.add(monthKey)
-  })
+  const months: Array<{ value: string; label: string }> = []
+  const now = new Date()
+  const currentYear = now.getFullYear()
   
-  if (months.size === 0) {
-    const now = new Date()
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    months.add(currentMonth)
+  // Generate months for current and previous year
+  for (let year = currentYear; year >= currentYear - 1; year--) {
+    for (let month = 12; month >= 1; month--) {
+      // Don't include future months
+      if (year === currentYear && month > now.getMonth() + 1) continue
+      
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`
+      const date = new Date(year, month - 1)
+      months.push({
+        value: monthKey,
+        label: date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })
+      })
+    }
   }
   
-  return Array.from(months)
-    .sort((a, b) => b.localeCompare(a))
-    .map(month => {
-      const [year, monthNum] = month.split('-')
-      const date = new Date(parseInt(year), parseInt(monthNum) - 1)
-      return {
-        value: month,
-        label: date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })
-      }
-    })
+  return months
 })
 
+// Generate years for the last 5 years for selection
 const availableYears = computed(() => {
-  const years = new Set<string>()
-  props.expenses.forEach(expense => {
-    const year = new Date(expense.date).getFullYear().toString()
-    years.add(year)
-  })
+  const years: Array<{ value: string; label: string }> = []
+  const currentYear = new Date().getFullYear()
   
-  if (years.size === 0) {
-    years.add(new Date().getFullYear().toString())
+  for (let year = currentYear; year >= currentYear - 4; year--) {
+    years.push({
+      value: year.toString(),
+      label: `${year}年`
+    })
   }
   
-  return Array.from(years)
-    .sort((a, b) => b.localeCompare(a))
-    .map(year => ({
-      value: year,
-      label: `${year}年`
-    }))
+  return years
 })
 </script>

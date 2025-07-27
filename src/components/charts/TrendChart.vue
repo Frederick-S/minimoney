@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mb-6" elevation="1" v-if="showChart && expenses.length > 0">
+  <v-card class="mb-6" elevation="1" v-if="showChart && trendData && trendData.length > 0">
     <v-card-title class="pb-2">
       <v-icon class="mr-2">mdi-chart-line</v-icon>
       {{ year }}年月度趋势
@@ -24,12 +24,22 @@ import {
   Tooltip,
   LineController
 } from 'chart.js'
-import { type CategoryKey } from '../../composables/useCategories'
-import { type Expense, type TrendChartProps } from '../../types'
+import { type MonthlyTrendData } from '../../types'
 
 Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, LineController)
 
-const props = defineProps<TrendChartProps>()
+interface Props {
+  trendData?: MonthlyTrendData[]
+  year?: string
+  showChart?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  trendData: () => [],
+  year: '',
+  showChart: false
+})
+
 const chartRef = ref<HTMLCanvasElement>()
 let chart: Chart | null = null
 
@@ -42,17 +52,20 @@ const formatAmount = (amount: number) => {
 }
 
 const monthlyData = computed(() => {
-  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  if (!props.trendData || props.trendData.length === 0) {
+    const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+    const data: Record<string, number> = {}
+    months.forEach(month => {
+      data[month] = 0
+    })
+    return { months, data }
+  }
+  
+  const months = props.trendData.map(item => item.month_label)
   const data: Record<string, number> = {}
   
-  months.forEach(month => {
-    data[month] = 0
-  })
-  
-  props.expenses.forEach(expense => {
-    const month = new Date(expense.date).getMonth()
-    const monthLabel = months[month]
-    data[monthLabel] += expense.amount
+  props.trendData.forEach(item => {
+    data[item.month_label] = item.amount
   })
   
   return { months, data }

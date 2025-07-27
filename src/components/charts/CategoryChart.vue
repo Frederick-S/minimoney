@@ -1,5 +1,5 @@
 <template>
-  <v-card class="mb-6" elevation="1" v-if="expenses.length > 0">
+  <v-card class="mb-6" elevation="1" v-if="categoryData && categoryData.length > 0">
     <v-card-title class="pb-2">
       <v-icon class="mr-2">mdi-chart-donut</v-icon>
       分类支出占比
@@ -23,11 +23,18 @@ import {
   DoughnutController
 } from 'chart.js'
 import { useCategories, type CategoryKey } from '../../composables/useCategories'
-import { type Expense, type ChartProps } from '../../types'
+import { type CategoryBreakdownData } from '../../types'
 
 Chart.register(ArcElement, Title, Tooltip, Legend, DoughnutController)
 
-const props = defineProps<ChartProps>()
+interface Props {
+  categoryData?: CategoryBreakdownData[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  categoryData: () => []
+})
+
 const chartRef = ref<HTMLCanvasElement>()
 let chart: Chart | null = null
 
@@ -41,40 +48,31 @@ const formatAmount = (amount: number) => {
 }
 
 const categoryBreakdown = computed(() => {
-  const breakdown: Record<CategoryKey, { amount: number; count: number; percentage: number }> = {} as any
+  if (!props.categoryData) return {}
   
-  props.expenses.forEach(expense => {
-    if (!breakdown[expense.category]) {
-      breakdown[expense.category] = { amount: 0, count: 0, percentage: 0 }
+  const breakdown: Record<string, { amount: number; count: number; percentage: number }> = {}
+  
+  props.categoryData.forEach(item => {
+    breakdown[item.category] = {
+      amount: item.amount,
+      count: item.count,
+      percentage: item.percentage
     }
-    breakdown[expense.category].amount += expense.amount
-    breakdown[expense.category].count += 1
   })
   
-  const total = props.expenses.reduce((sum, exp) => sum + exp.amount, 0)
-  Object.keys(breakdown).forEach(category => {
-    const cat = category as CategoryKey
-    breakdown[cat].percentage = total > 0 ? (breakdown[cat].amount / total) * 100 : 0
-  })
-  
-  // Sort by amount descending
-  const sortedBreakdown: Record<CategoryKey, any> = {} as any
-  Object.entries(breakdown)
-    .sort(([,a], [,b]) => b.amount - a.amount)
-    .forEach(([category, data]) => {
-      sortedBreakdown[category as CategoryKey] = data
-    })
-  
-  return sortedBreakdown
+  return breakdown
 })
 
-const total = computed(() => props.expenses.reduce((sum, exp) => sum + exp.amount, 0))
+const total = computed(() => {
+  if (!props.categoryData) return 0
+  return props.categoryData.reduce((sum, item) => sum + item.amount, 0)
+})
 
 const createChart = () => {
-  if (!chartRef.value) return
+  if (!chartRef.value || !props.categoryData || props.categoryData.length === 0) return
   
-  const categories = Object.keys(categoryBreakdown.value) as CategoryKey[]
-  const amounts = categories.map(cat => categoryBreakdown.value[cat].amount)
+  const categories = props.categoryData.map(item => item.category as CategoryKey)
+  const amounts = props.categoryData.map(item => item.amount)
   const colors = categories.map(cat => getCategoryChartColor(cat))
   
   // Don't create chart if no data

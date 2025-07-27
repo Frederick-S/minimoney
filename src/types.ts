@@ -65,7 +65,6 @@ export interface ChartProps {
  * Props for period filter component
  */
 export interface PeriodFilterProps {
-  expenses: Expense[]
   modelPeriodType: 'month' | 'year'
   modelMonth: string
   modelYear: string
@@ -145,6 +144,44 @@ export interface SummaryStatsProps {
   total: number
   count: number
   periodLabel: string
+}
+
+/**
+ * Category breakdown data from RPC
+ */
+export interface CategoryBreakdownData {
+  category: string
+  amount: number
+  count: number
+  percentage: number
+}
+
+/**
+ * Monthly trend data from RPC
+ */
+export interface MonthlyTrendData {
+  month: number
+  month_label: string
+  amount: number
+}
+
+/**
+ * Period summary data from RPC
+ */
+export interface PeriodSummaryData {
+  total_amount: number
+  expense_count: number
+}
+
+/**
+ * Props for chart components that use aggregated data
+ */
+export interface AggregatedChartProps {
+  categoryData?: CategoryBreakdownData[]
+  trendData?: MonthlyTrendData[]
+  summary?: PeriodSummaryData
+  year?: string
+  showChart?: boolean
 }
 
 /**

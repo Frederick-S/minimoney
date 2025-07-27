@@ -79,10 +79,85 @@ export function useExpenseManagement() {
     }
   }
 
+  // Get category breakdown using RPC
+  const getCategoryBreakdown = async (startDate: string, endDate: string) => {
+    if (!user.value) return []
+
+    const { data, error } = await supabase.rpc('get_category_breakdown', {
+      p_user_id: user.value.id,
+      p_start_date: startDate,
+      p_end_date: endDate
+    })
+
+    if (error) {
+      console.error('Error getting category breakdown:', error)
+      return []
+    } else {
+      return data || []
+    }
+  }
+
+  // Get monthly trend data using RPC
+  const getMonthlyTrend = async (year: number) => {
+    if (!user.value) return []
+
+    const { data, error } = await supabase.rpc('get_monthly_trend', {
+      p_user_id: user.value.id,
+      p_year: year
+    })
+
+    if (error) {
+      console.error('Error getting monthly trend:', error)
+      return []
+    } else {
+      return data || []
+    }
+  }
+
+  // Get period summary using RPC
+  const getPeriodSummary = async (startDate: string, endDate: string) => {
+    if (!user.value) return { total_amount: 0, expense_count: 0 }
+
+    const { data, error } = await supabase.rpc('get_period_summary', {
+      p_user_id: user.value.id,
+      p_start_date: startDate,
+      p_end_date: endDate
+    })
+
+    if (error) {
+      console.error('Error getting period summary:', error)
+      return { total_amount: 0, expense_count: 0 }
+    } else {
+      return data?.[0] || { total_amount: 0, expense_count: 0 }
+    }
+  }
+
+  // Get period expenses using RPC (still needed for some components)
+  const getPeriodExpenses = async (startDate: string, endDate: string) => {
+    if (!user.value) return []
+
+    const { data, error } = await supabase.rpc('get_period_expenses', {
+      p_user_id: user.value.id,
+      p_start_date: startDate,
+      p_end_date: endDate
+    })
+
+    if (error) {
+      console.error('Error getting period expenses:', error)
+      return []
+    } else {
+      return data || []
+    }
+  }
+
   return {
     refreshTrigger,
     saveExpense,
     updateExpense,
-    loadAllExpenses
+    loadAllExpenses,
+    getCategoryBreakdown,
+    getMonthlyTrend,
+    getPeriodSummary,
+    getPeriodExpenses
   }
 }
