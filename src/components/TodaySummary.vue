@@ -3,24 +3,82 @@
     <v-card-text>
       <v-card-title class="pa-0 text-h6 mb-2">今日支出</v-card-title>
       <div class="text-h4 font-weight-bold text-primary">
-        {{ formatAmount(todayTotal) }}
+        <v-progress-circular 
+          v-if="loading" 
+          indeterminate 
+          size="24" 
+          width="3"
+        />
+        <span v-else>{{ formatAmount(todayTotal) }}</span>
       </div>
     </v-card-text>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { type CategoryKey } from '../composables/useCategories'
-import { type Expense, type ExpenseListProps } from '../types'
+import { ref, onMounted, watch } from 'vue'
+import { useSupabase } from '../composables/useSupabase'
+import { useExpenseManagement } from '../composables/useExpenseManagement'
+import { type ExpenseListProps } from '../types'
 
 const props = defineProps<ExpenseListProps>()
 
-const todayTotal = computed(() => {
-  const today = new Date().toDateString()
-  return props.expenses
-    .filter(expense => new Date(expense.date).toDateString() === today)
-    .reduce((total, expense) => total + expense.amount, 0)
+const { user, supabase } = useSupabase()
+const { refreshTrigger } = useExpenseManagement()
+
+const todayTotal = ref(0)
+const loading = ref(true)
+
+// Load today's expenses using SQL SUM aggregation
+const loadTodayTotal = async () => {
+  if (!user.value || !user.value.id) {
+    todayTotal.value = 0
+    loading.value = false
+    return
+  }
+
+  loading.value = true
+  
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+
+  try {
+    // Use RPC function for SQL SUM aggregation
+    const { data, error } = await supabase
+      .rpc('get_today_expenses_sum', {
+        p_user_id: user.value.id,
+        p_date: todayStr
+      })
+
+    if (error) {
+      console.error('RPC call failed:', error)
+      todayTotal.value = 0
+    } else {
+      // RPC returns the sum directly
+      todayTotal.value = data || 0
+    }
+  } catch (err) {
+    console.error('Error calculating today\'s total:', err)
+    todayTotal.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+// Initialize on mount
+onMounted(() => {
+  loadTodayTotal()
+})
+
+// Watch for user changes
+watch(user, () => {
+  loadTodayTotal()
+})
+
+// Watch for expense changes (refresh trigger)
+watch(refreshTrigger, () => {
+  loadTodayTotal()
 })
 
 const formatAmount = (amount: number) => {
