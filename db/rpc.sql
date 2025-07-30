@@ -23,7 +23,10 @@ CREATE OR REPLACE FUNCTION get_category_breakdown(
   p_start_date DATE,
   p_end_date DATE
 ) RETURNS TABLE(
-  category TEXT,
+  category_id UUID,
+  category_name TEXT,
+  category_display_name TEXT,
+  category_color TEXT,
   amount NUMERIC,
   count BIGINT,
   percentage NUMERIC
@@ -41,7 +44,10 @@ BEGIN
   -- Return category breakdown with percentage
   RETURN QUERY
   SELECT 
-    e.category,
+    c.id as category_id,
+    c.name as category_name,
+    c.display_name as category_display_name,
+    c.chart_color as category_color,
     COALESCE(SUM(e.amount), 0) as amount,
     COUNT(*)::BIGINT as count,
     CASE 
@@ -49,10 +55,12 @@ BEGIN
       ELSE 0
     END as percentage
   FROM expenses e
+  JOIN categories c ON e.category_id = c.id
   WHERE e.user_id = p_user_id 
     AND e.date >= p_start_date 
     AND e.date <= p_end_date
-  GROUP BY e.category
+    AND c.user_id = p_user_id
+  GROUP BY c.id, c.name, c.display_name, c.chart_color
   ORDER BY SUM(e.amount) DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -130,7 +138,10 @@ CREATE OR REPLACE FUNCTION get_period_expenses(
 ) RETURNS TABLE(
   id UUID,
   amount NUMERIC,
-  category TEXT,
+  category_id UUID,
+  category_name TEXT,
+  category_display_name TEXT,
+  category_color TEXT,
   date DATE,
   note TEXT,
   user_id UUID,
@@ -141,20 +152,124 @@ BEGIN
   SELECT 
     e.id,
     e.amount,
-    e.category,
+    e.category_id,
+    c.name as category_name,
+    c.display_name as category_display_name,
+    c.chart_color as category_color,
     e.date,
     e.note,
     e.user_id,
     e.created_at
   FROM expenses e
+  JOIN categories c ON e.category_id = c.id
   WHERE e.user_id = p_user_id 
     AND e.date >= p_start_date 
     AND e.date <= p_end_date
+    AND c.user_id = p_user_id
   ORDER BY e.created_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 6. Category Management Functions
+
+-- Function to get hierarchical category breakdown (includes parent category totals)
+CREATE OR REPLACE FUNCTION get_hierarchical_category_breakdown(
+  p_user_id UUID,
+  p_start_date DATE,
+  p_end_date DATE
+) RETURNS TABLE(
+  category_id UUID,
+  parent_id UUID,
+  category_name TEXT,
+  category_display_name TEXT,
+  category_color TEXT,
+  level INTEGER,
+  amount NUMERIC,
+  count BIGINT,
+  percentage NUMERIC,
+  has_children BOOLEAN
+) AS $$
+DECLARE
+  total_amount NUMERIC;
+BEGIN
+  -- Calculate total amount for percentage calculation
+  SELECT COALESCE(SUM(e.amount), 0) INTO total_amount
+  FROM expenses e
+  WHERE e.user_id = p_user_id 
+    AND e.date >= p_start_date 
+    AND e.date <= p_end_date;
+
+  -- Return hierarchical category breakdown
+  RETURN QUERY
+  WITH RECURSIVE category_expenses AS (
+    -- Get direct expenses for each category
+    SELECT 
+      c.id as category_id,
+      c.parent_id,
+      c.name as category_name,
+      c.display_name as category_display_name,
+      c.chart_color as category_color,
+      c.level,
+      COALESCE(SUM(e.amount), 0) as direct_amount,
+      COUNT(e.id)::BIGINT as direct_count,
+      EXISTS(SELECT 1 FROM categories child WHERE child.parent_id = c.id AND child.user_id = p_user_id) as has_children
+    FROM categories c
+    LEFT JOIN expenses e ON e.category_id = c.id 
+      AND e.user_id = p_user_id 
+      AND e.date >= p_start_date 
+      AND e.date <= p_end_date
+    WHERE c.user_id = p_user_id
+    GROUP BY c.id, c.parent_id, c.name, c.display_name, c.chart_color, c.level
+  ),
+  category_totals AS (
+    -- Calculate totals including child categories
+    SELECT 
+      ce.category_id,
+      ce.parent_id,
+      ce.category_name,
+      ce.category_display_name,
+      ce.category_color,
+      ce.level,
+      ce.has_children,
+      -- For leaf categories, use direct amount; for parent categories, sum children
+      CASE 
+        WHEN ce.has_children THEN (
+          SELECT COALESCE(SUM(child_ce.direct_amount), 0)
+          FROM category_expenses child_ce
+          WHERE child_ce.parent_id = ce.category_id
+        ) + ce.direct_amount
+        ELSE ce.direct_amount
+      END as total_amount,
+      -- Similar logic for count
+      CASE 
+        WHEN ce.has_children THEN (
+          SELECT COALESCE(SUM(child_ce.direct_count), 0)
+          FROM category_expenses child_ce
+          WHERE child_ce.parent_id = ce.category_id
+        ) + ce.direct_count
+        ELSE ce.direct_count
+      END as total_count
+    FROM category_expenses ce
+  )
+  SELECT 
+    ct.category_id,
+    ct.parent_id,
+    ct.category_name,
+    ct.category_display_name,
+    ct.category_color,
+    ct.level,
+    ct.total_amount as amount,
+    ct.total_count as count,
+    CASE 
+      WHEN total_amount > 0 THEN ROUND((ct.total_amount / total_amount * 100), 2)
+      ELSE 0
+    END as percentage,
+    ct.has_children
+  FROM category_totals ct
+  WHERE ct.total_amount > 0 OR ct.has_children
+  ORDER BY ct.level, ct.total_amount DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to copy system categories to user categories
 CREATE OR REPLACE FUNCTION copy_system_categories_to_user(
