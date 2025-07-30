@@ -23,6 +23,45 @@ const initialized = ref(false)
 export function useSupabase() {
   const { showSuccess, showError } = useToast()
 
+  // Function to initialize user categories for new users
+  const initializeUserCategoriesForNewUser = async (userId: string) => {
+    const { error } = await supabase.rpc('create_categories_for_new_user', {
+      user_uuid: userId,
+      p_category_set: 'default',
+      p_locale: 'zh_CN'
+    })
+
+    if (error) {
+      console.error('Error initializing user categories:', error)
+      throw error
+    }
+  }
+
+  // Function to check if user has categories and initialize if needed
+  const ensureUserHasCategories = async (userId: string) => {
+    try {
+      // Check if user has any categories
+      const { data: existingCategories, error } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1)
+
+      if (error) {
+        console.error('Error checking user categories:', error)
+        return
+      }
+
+      // If no categories exist, initialize them
+      if (!existingCategories || existingCategories.length === 0) {
+        console.log('Initializing categories for new user:', userId)
+        await initializeUserCategoriesForNewUser(userId)
+      }
+    } catch (error) {
+      console.error('Error ensuring user has categories:', error)
+    }
+  }
+
   const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -33,6 +72,14 @@ export function useSupabase() {
       showError('注册失败: ' + error.message)
     } else if (data.user) {
       showSuccess('注册成功，请检查邮箱验证链接')
+      
+      // Initialize user categories after successful signup
+      try {
+        await initializeUserCategoriesForNewUser(data.user.id)
+      } catch (categoryError) {
+        console.error('Failed to initialize categories for new user:', categoryError)
+        // Don't show error to user as signup was successful, just log it
+      }
     }
     
     return { data, error }
@@ -101,6 +148,11 @@ export function useSupabase() {
       } else {
         session.value = initialSession
         user.value = initialSession?.user ?? null
+        
+        // If user is already signed in, ensure they have categories
+        if (initialSession?.user?.id) {
+          ensureUserHasCategories(initialSession.user.id)
+        }
       }
       
       // Listen for auth changes (login, logout, token refresh)
@@ -115,7 +167,10 @@ export function useSupabase() {
           session.value = null
           user.value = null
         } else if (event === 'SIGNED_IN') {
-          // User signed in
+          // User signed in - ensure they have categories
+          if (newSession?.user?.id) {
+            ensureUserHasCategories(newSession.user.id)
+          }
         }
         
         loading.value = false
