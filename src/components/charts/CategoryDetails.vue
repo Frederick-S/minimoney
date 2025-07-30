@@ -8,12 +8,12 @@
       <v-list>
         <v-list-item
           v-for="categoryItem in categoryData"
-          :key="categoryItem.category"
+          :key="categoryItem.categoryId"
           class="px-4"
         >
           <template v-slot:prepend>
             <v-avatar
-              :color="getCategoryColor(categoryItem.category as CategoryKey)"
+              :color="categoryItem.categoryColor"
               size="small"
               class="mr-3"
             >
@@ -24,7 +24,7 @@
           </template>
           
           <v-list-item-title class="font-weight-medium">
-            {{ getCategoryName(categoryItem.category as CategoryKey) }}
+            {{ categoryItem.categoryDisplayName || categoryItem.categoryName }}
           </v-list-item-title>
           
           <template v-slot:append>
@@ -40,8 +40,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useCategories, type CategoryKey } from '../../composables/useCategories'
 import { type CategoryBreakdownData } from '../../types'
 
 interface Props {
@@ -51,8 +49,6 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   categoryData: () => []
 })
-
-const { getCategoryName, getCategoryColor } = useCategories()
 
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('zh-CN', {

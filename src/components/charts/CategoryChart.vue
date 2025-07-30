@@ -22,7 +22,6 @@ import {
   Legend,
   DoughnutController
 } from 'chart.js'
-import { useCategories, type CategoryKey } from '../../composables/useCategories'
 import { type CategoryBreakdownData } from '../../types'
 
 Chart.register(ArcElement, Title, Tooltip, Legend, DoughnutController)
@@ -38,8 +37,6 @@ const props = withDefaults(defineProps<Props>(), {
 const chartRef = ref<HTMLCanvasElement>()
 let chart: Chart | null = null
 
-const { getCategoryName, getCategoryChartColor } = useCategories()
-
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -53,7 +50,7 @@ const categoryBreakdown = computed(() => {
   const breakdown: Record<string, { amount: number; count: number; percentage: number }> = {}
   
   props.categoryData.forEach(item => {
-    breakdown[item.category] = {
+    breakdown[item.categoryId] = {
       amount: item.amount,
       count: item.count,
       percentage: item.percentage
@@ -71,12 +68,12 @@ const total = computed(() => {
 const createChart = () => {
   if (!chartRef.value || !props.categoryData || props.categoryData.length === 0) return
   
-  const categories = props.categoryData.map(item => item.category as CategoryKey)
+  const categoryNames = props.categoryData.map(item => item.categoryDisplayName || item.categoryName)
   const amounts = props.categoryData.map(item => item.amount)
-  const colors = categories.map(cat => getCategoryChartColor(cat))
+  const colors = props.categoryData.map(item => item.categoryColor)
   
   // Don't create chart if no data
-  if (categories.length === 0 || amounts.every(amount => amount === 0)) {
+  if (categoryNames.length === 0 || amounts.every(amount => amount === 0)) {
     if (chart) {
       chart.destroy()
       chart = null
@@ -91,7 +88,7 @@ const createChart = () => {
   chart = new Chart(chartRef.value, {
     type: 'doughnut',
     data: {
-      labels: categories.map(cat => getCategoryName(cat)),
+      labels: categoryNames,
       datasets: [{
         data: amounts,
         backgroundColor: colors,

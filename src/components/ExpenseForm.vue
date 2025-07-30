@@ -37,7 +37,19 @@
             label="分类"
             variant="outlined"
             class="mb-4"
-          />
+            :loading="!categoriesLoaded"
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps">
+                <template #prepend>
+                  <v-icon :icon="item.raw.icon" class="mr-2" />
+                </template>
+                <v-list-item-title>
+                  {{ item.raw.level > 0 ? '　'.repeat(item.raw.level) + item.raw.text : item.raw.text }}
+                </v-list-item-title>
+              </v-list-item>
+            </template>
+          </v-select>
           
           <v-textarea
             v-model="note"
@@ -74,30 +86,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineProps, defineEmits } from 'vue'
+import { ref, watch, defineProps, defineEmits, onMounted } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
-import { useCategories, type CategoryKey } from '../composables/useCategories'
+import { useCategories } from '../composables/useCategories'
 import { type Expense, type ExpenseFormProps, type ExpenseFormEmits } from '../types'
 
 const props = defineProps<ExpenseFormProps>()
 const emit = defineEmits<ExpenseFormEmits>()
 
 const { supabase } = useSupabase()
-const { CATEGORY_OPTIONS } = useCategories()
+const { 
+  categories, 
+  categoriesLoaded, 
+  categoryOptions, 
+  loadCategories, 
+  initializeUserCategories 
+} = useCategories()
 
 const showForm = ref(props.modelValue)
 const amount = ref('')
-const category = ref<CategoryKey>('Food')
+const category = ref<string>('')
 const note = ref('')
 
-const categoryOptions = CATEGORY_OPTIONS
+// Load categories when component mounts
+onMounted(async () => {
+  if (categories.value.length === 0) {
+    const loadedCategories = await loadCategories()
+    // If no categories exist, initialize them for the user
+    if (loadedCategories.length === 0) {
+      await initializeUserCategories()
+    }
+  }
+  
+  // Set default category if none selected
+  if (!category.value && categoryOptions.value.length > 0) {
+    category.value = categoryOptions.value[0].value
+  }
+})
 
 watch(() => props.modelValue, (newValue) => {
   showForm.value = newValue
   if (newValue && props.expense) {
     // Populate form with existing expense data
     amount.value = props.expense.amount.toString()
-    category.value = props.expense.category as CategoryKey
+    category.value = props.expense.categoryId
     note.value = props.expense.note || ''
   }
 })
@@ -105,7 +137,7 @@ watch(() => props.modelValue, (newValue) => {
 watch(() => props.expense, (newExpense) => {
   if (newExpense) {
     amount.value = newExpense.amount.toString()
-    category.value = newExpense.category as CategoryKey
+    category.value = newExpense.categoryId
     note.value = newExpense.note || ''
   }
 })
@@ -122,15 +154,18 @@ const closeForm = () => {
 const resetForm = () => {
   amount.value = ''
   note.value = ''
-  category.value = 'Food'
+  // Reset to first available category
+  if (categoryOptions.value.length > 0) {
+    category.value = categoryOptions.value[0].value
+  }
 }
 
 const handleSave = () => {
-  if (!amount.value) return
+  if (!amount.value || !category.value) return
   
   const expenseData = {
     amount: parseFloat(amount.value),
-    category: category.value,
+    categoryId: category.value,
     date: props.expense ? props.expense.date : new Date().toISOString(),
     note: note.value.trim() || undefined
   }
