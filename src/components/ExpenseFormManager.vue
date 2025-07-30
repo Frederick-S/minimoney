@@ -12,6 +12,7 @@
 import { ref, computed } from 'vue'
 import ExpenseForm from './ExpenseForm.vue'
 import { useExpenseManagement } from '../composables/useExpenseManagement'
+import { useToast } from '../composables/useToast'
 import { type Expense } from '../types'
 
 interface Props {
@@ -27,6 +28,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { saveExpense, updateExpense, deleteExpense } = useExpenseManagement()
+const { showError } = useToast()
 
 const showForm = computed({
   get: () => props.modelValue,
@@ -42,6 +44,7 @@ const handleSave = async (expense: Omit<Expense, 'id'>) => {
     showForm.value = false
   } catch (error) {
     console.error('Failed to save expense:', error)
+    showError('保存支出失败')
   }
 }
 
@@ -52,6 +55,7 @@ const handleUpdate = async (expense: Expense) => {
     showForm.value = false
   } catch (error) {
     console.error('Failed to update expense:', error)
+    showError('更新支出失败')
   }
 }
 
@@ -62,6 +66,7 @@ const handleDelete = async (expenseId: string) => {
     showForm.value = false
   } catch (error) {
     console.error('Failed to delete expense:', error)
+    showError('删除支出失败')
   }
 }
 </script>

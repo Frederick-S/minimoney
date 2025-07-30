@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { useSupabase } from './useSupabase'
+import { useToast } from './useToast'
 import { type Category } from '../types'
 
 // Helper functions for camelCase conversion (same as in useExpenseManagement)
@@ -33,6 +34,7 @@ const categoriesLoaded = ref(false)
  */
 export function useCategories() {
   const { user, supabase } = useSupabase()
+  const { showError, showSuccess } = useToast()
 
   /**
    * Load user categories from database
@@ -47,6 +49,7 @@ export function useCategories() {
 
       if (error) {
         console.error('Error loading categories:', error)
+        showError('加载分类失败')
         return []
       }
 
@@ -55,7 +58,8 @@ export function useCategories() {
       categoriesLoaded.value = true
       return convertedCategories
     } catch (error) {
-      console.error('Error loading categories:', error)
+      console.error('Error loading category breakdown:', error)
+      showError('加载分类统计失败')
       return []
     }
   }
@@ -75,6 +79,7 @@ export function useCategories() {
 
       if (error) {
         console.error('Error initializing user categories:', error)
+        showError('初始化用户分类失败')
         throw error
       }
 
@@ -82,6 +87,7 @@ export function useCategories() {
       await loadCategories()
     } catch (error) {
       console.error('Error initializing user categories:', error)
+      showError('初始化用户分类失败')
       throw error
     }
   }

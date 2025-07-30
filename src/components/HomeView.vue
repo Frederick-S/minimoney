@@ -35,6 +35,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useExpenseManagement } from '../composables/useExpenseManagement'
+import { useToast } from '../composables/useToast'
 import TodaySummary from './TodaySummary.vue'
 import ExpenseList from './ExpenseList.vue'
 import { type Expense, type HomeViewProps, type HomeViewEmits } from '../types'
@@ -46,6 +47,7 @@ const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
 const { refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
+const { showError } = useToast()
 
 const expenses = ref<Expense[]>([])
 const currentPage = ref(0)
@@ -77,6 +79,7 @@ const loadExpenses = async (reset = false) => {
 
   if (error) {
     console.error('Error loading expenses:', error)
+    showError('加载支出记录失败')
   } else {
     if (reset) {
       expenses.value = data || []

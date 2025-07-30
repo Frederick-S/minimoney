@@ -56,6 +56,9 @@
           v-if="user"
           v-model="showPasswordChange" 
         />
+
+        <!-- Toast Container for notifications -->
+        <ToastContainer />
       </v-container>
     </v-main>
   </v-app>
@@ -70,6 +73,7 @@ import AppHeader from './components/AppHeader.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
+import ToastContainer from './components/ToastContainer.vue'
 import { type Expense } from './types'
 
 const { user, loading, signOut, initAuth } = useSupabase()
