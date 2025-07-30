@@ -1,15 +1,17 @@
-import { type CategoryKey } from './composables/useCategories'
-
 /**
  * Core expense interface used throughout the application
  */
 export interface Expense {
   id: string
   amount: number
-  category: CategoryKey
+  categoryId: string  // UUID reference to categories table
+  categoryName?: string  // For display purposes when joined
+  categoryDisplayName?: string  // Chinese display name
+  categoryColor?: string  // Category color for UI
   date: string
   note?: string
-  user_id?: string
+  userId?: string
+  createdAt?: string
 }
 
 /**
@@ -18,7 +20,7 @@ export interface Expense {
 export interface User {
   id: string
   email?: string
-  user_metadata?: {
+  userMetadata?: {
     [key: string]: any
   }
 }
@@ -150,10 +152,35 @@ export interface SummaryStatsProps {
  * Category breakdown data from RPC
  */
 export interface CategoryBreakdownData {
-  category: string
+  categoryId: string
+  categoryName: string
+  categoryDisplayName: string
+  categoryColor: string
   amount: number
   count: number
   percentage: number
+}
+
+/**
+ * Category interface for dynamic category system
+ */
+export interface Category {
+  id: string
+  userId: string
+  parentId?: string
+  systemCategoryId?: string
+  name: string
+  displayName: string
+  color: string
+  chartColor: string
+  icon: string
+  isDefault: boolean
+  sortOrder: number
+  level: number
+  path?: string
+  hasChildren?: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 /**
@@ -161,7 +188,7 @@ export interface CategoryBreakdownData {
  */
 export interface MonthlyTrendData {
   month: number
-  month_label: string
+  monthLabel: string
   amount: number
 }
 
@@ -169,8 +196,8 @@ export interface MonthlyTrendData {
  * Period summary data from RPC
  */
 export interface PeriodSummaryData {
-  total_amount: number
-  expense_count: number
+  totalAmount: number
+  expenseCount: number
 }
 
 /**
