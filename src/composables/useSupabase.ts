@@ -73,20 +73,17 @@ export function useSupabase() {
       
       // Listen for auth changes (login, logout, token refresh)
       supabase.auth.onAuthStateChange(async (event, newSession) => {
-        console.log('Auth state change:', event, newSession?.user?.email)
-        
         session.value = newSession
         user.value = newSession?.user ?? null
         
         // Handle token expiration
         if (event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed successfully')
+          // Token refreshed successfully
         } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out')
           session.value = null
           user.value = null
         } else if (event === 'SIGNED_IN') {
-          console.log('User signed in')
+          // User signed in
         }
         
         loading.value = false

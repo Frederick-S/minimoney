@@ -140,7 +140,6 @@ watch(user, async (newUser, oldUser) => {
 
 // Watch for expense changes (when new expense is added or updated)
 watch([() => props.refreshTrigger, globalRefreshTrigger], async () => {
-  console.log('HomeView refresh triggered, globalRefreshTrigger:', globalRefreshTrigger.value)
   if (user.value) {
     await loadExpenses(true)
   }

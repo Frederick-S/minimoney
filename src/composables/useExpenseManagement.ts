@@ -61,7 +61,6 @@ export function useExpenseManagement() {
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      console.log('Expense saved, refreshTrigger:', refreshTrigger.value)
       return convertKeysToCamelCase<Expense>(data)
     }
   }
@@ -91,7 +90,6 @@ export function useExpenseManagement() {
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      console.log('Expense updated, refreshTrigger:', refreshTrigger.value)
       return convertKeysToCamelCase<Expense>(data)
     }
   }
@@ -202,7 +200,6 @@ export function useExpenseManagement() {
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      console.log('Expense deleted, refreshTrigger:', refreshTrigger.value)
     }
   }
 
