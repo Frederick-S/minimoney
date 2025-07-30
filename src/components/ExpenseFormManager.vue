@@ -4,6 +4,7 @@
     :expense="editingExpense"
     @save="handleSave"
     @update="handleUpdate"
+    @delete="handleDelete"
   />
 </template>
 
@@ -25,7 +26,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { saveExpense, updateExpense } = useExpenseManagement()
+const { saveExpense, updateExpense, deleteExpense } = useExpenseManagement()
 
 const showForm = computed({
   get: () => props.modelValue,
@@ -51,6 +52,16 @@ const handleUpdate = async (expense: Expense) => {
     showForm.value = false
   } catch (error) {
     console.error('Failed to update expense:', error)
+  }
+}
+
+// Handle deleting existing expense
+const handleDelete = async (expenseId: string) => {
+  try {
+    await deleteExpense(expenseId)
+    showForm.value = false
+  } catch (error) {
+    console.error('Failed to delete expense:', error)
   }
 }
 </script>

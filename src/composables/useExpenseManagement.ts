@@ -186,10 +186,31 @@ export function useExpenseManagement() {
     }
   }
 
+  // Delete expense from Supabase
+  const deleteExpense = async (expenseId: string) => {
+    if (!user.value) return
+
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', expenseId)
+      .eq('user_id', user.value.id) // Ensure user can only delete their own expenses
+
+    if (error) {
+      console.error('Error deleting expense:', error)
+      throw error
+    } else {
+      // Trigger refresh in components
+      refreshTrigger.value++
+      console.log('Expense deleted, refreshTrigger:', refreshTrigger.value)
+    }
+  }
+
   return {
     refreshTrigger,
     saveExpense,
     updateExpense,
+    deleteExpense,
     loadAllExpenses,
     getCategoryBreakdown,
     getMonthlyTrend,
