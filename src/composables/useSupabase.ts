@@ -1,6 +1,5 @@
 import { createClient, type User, type Session } from '@supabase/supabase-js'
 import { ref } from 'vue'
-import { useToast } from './useToast'
 
 // Supabase configuration - replace with your actual values
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
@@ -21,8 +20,6 @@ const loading = ref(true)
 const initialized = ref(false)
 
 export function useSupabase() {
-  const { showSuccess, showError } = useToast()
-
   // Function to initialize user categories for new users
   const initializeUserCategoriesForNewUser = async (userId: string) => {
     const { error } = await supabase.rpc('create_categories_for_new_user', {
@@ -68,11 +65,7 @@ export function useSupabase() {
       password,
     })
     
-    if (error) {
-      showError('注册失败: ' + error.message)
-    } else if (data.user) {
-      showSuccess('注册成功，请检查邮箱验证链接')
-      
+    if (data.user && !error) {
       // Initialize user categories after successful signup
       try {
         await initializeUserCategoriesForNewUser(data.user.id)
@@ -91,12 +84,6 @@ export function useSupabase() {
       password,
     })
     
-    if (error) {
-      showError('登录失败: ' + error.message)
-    } else if (data.user) {
-      showSuccess('登录成功')
-    }
-    
     return { data, error }
   }
 
@@ -106,12 +93,6 @@ export function useSupabase() {
     user.value = null
     session.value = null
     
-    if (error) {
-      showError('登出失败: ' + error.message)
-    } else {
-      showSuccess('已成功登出')
-    }
-    
     return { error }
   }
 
@@ -119,12 +100,6 @@ export function useSupabase() {
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword
     })
-    
-    if (error) {
-      showError('密码更新失败: ' + error.message)
-    } else {
-      showSuccess('密码更新成功')
-    }
     
     return { data, error }
   }
@@ -140,7 +115,6 @@ export function useSupabase() {
       
       if (error) {
         console.error('Error getting session:', error)
-        showError('会话获取失败')
         // Clear any corrupted session data
         await supabase.auth.signOut()
         session.value = null
@@ -178,7 +152,6 @@ export function useSupabase() {
       
     } catch (error) {
       console.error('Auth initialization error:', error)
-      showError('认证初始化失败')
       session.value = null
       user.value = null
     } finally {

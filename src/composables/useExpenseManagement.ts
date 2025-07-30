@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import { useSupabase } from './useSupabase'
-import { useToast } from './useToast'
 import { type Expense, type CategoryBreakdownData, type MonthlyTrendData, type PeriodSummaryData } from '../types'
 
 // Helper functions to convert between snake_case (database) and camelCase (TypeScript)
@@ -39,7 +38,6 @@ const refreshTrigger = ref(0)
 
 export function useExpenseManagement() {
   const { user, supabase } = useSupabase()
-  const { showError, showSuccess } = useToast()
 
   // Save expense to Supabase
   const saveExpense = async (expense: Omit<Expense, 'id'>) => {
@@ -59,12 +57,10 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error saving expense:', error)
-      showError('保存支出失败，请重试')
-      throw error
+      throw new Error('保存支出失败，请重试')
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      showSuccess('支出保存成功')
       return convertKeysToCamelCase<Expense>(data)
     }
   }
@@ -90,12 +86,10 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error updating expense:', error)
-      showError('更新支出失败，请重试')
-      throw error
+      throw new Error('更新支出失败，请重试')
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      showSuccess('支出更新成功')
       return convertKeysToCamelCase<Expense>(data)
     }
   }
@@ -112,8 +106,7 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error loading all expenses:', error)
-      showError('加载支出数据失败')
-      return []
+      throw new Error('加载支出数据失败')
     } else {
       return convertKeysToCamelCase<Expense[]>(data || [])
     }
@@ -131,8 +124,7 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting category breakdown:', error)
-      showError('获取分类统计失败')
-      return []
+      throw new Error('获取分类统计失败')
     } else {
       return convertKeysToCamelCase<CategoryBreakdownData[]>(data || [])
     }
@@ -149,8 +141,7 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting monthly trend:', error)
-      showError('获取月度趋势失败')
-      return []
+      throw new Error('获取月度趋势失败')
     } else {
       return convertKeysToCamelCase<MonthlyTrendData[]>(data || [])
     }
@@ -168,8 +159,7 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting period summary:', error)
-      showError('获取统计摘要失败')
-      return { totalAmount: 0, expenseCount: 0 }
+      throw new Error('获取统计摘要失败')
     } else {
       const result = data?.[0] || { total_amount: 0, expense_count: 0 }
       return convertKeysToCamelCase<PeriodSummaryData>(result)
@@ -188,8 +178,7 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting period expenses:', error)
-      showError('获取期间支出失败')
-      return []
+      throw new Error('获取期间支出失败')
     } else {
       return convertKeysToCamelCase<Expense[]>(data || [])
     }
@@ -207,12 +196,10 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error deleting expense:', error)
-      showError('删除支出失败，请重试')
-      throw error
+      throw new Error('删除支出失败，请重试')
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      showSuccess('支出删除成功')
     }
   }
 
