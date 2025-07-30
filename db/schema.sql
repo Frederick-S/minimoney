@@ -1,45 +1,3 @@
--- Create expenses table
-CREATE TABLE expenses (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    amount DECIMAL(10,2) NOT NULL,
-    category_id UUID REFERENCES categories(id) ON DELETE RESTRICT,
-    note TEXT,
-    date DATE NOT NULL DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
-);
-
--- Create index on user_id for better performance
-CREATE INDEX expenses_user_id_idx ON expenses(user_id);
-
--- Create index on category_id for better performance
-CREATE INDEX expenses_category_id_idx ON expenses(category_id);
-
--- Create index on date for better performance
-CREATE INDEX expenses_date_idx ON expenses(date);
-
--- Create index on created_at for pagination performance
-CREATE INDEX expenses_created_at_idx ON expenses(created_at);
-
--- Enable Row Level Security (RLS)
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-
--- Create policy: Users can only see their own expenses
-CREATE POLICY "Users can view own expenses" ON expenses
-    FOR SELECT USING (auth.uid() = user_id);
-
--- Create policy: Users can only insert their own expenses
-CREATE POLICY "Users can insert own expenses" ON expenses
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Create policy: Users can only update their own expenses
-CREATE POLICY "Users can update own expenses" ON expenses
-    FOR UPDATE USING (auth.uid() = user_id);
-
--- Create policy: Users can only delete their own expenses
-CREATE POLICY "Users can delete own expenses" ON expenses
-    FOR DELETE USING (auth.uid() = user_id);
-
 -- System-wide category templates (admin managed)
 CREATE TABLE system_categories (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -86,6 +44,17 @@ CREATE TABLE categories (
     CHECK (parent_id != id)
 );
 
+-- Create expenses table
+CREATE TABLE expenses (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    amount DECIMAL(10,2) NOT NULL,
+    category_id UUID REFERENCES categories(id) ON DELETE RESTRICT,
+    note TEXT,
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
 -- Create indexes for better performance
 CREATE INDEX system_categories_parent_id_idx ON system_categories(parent_id);
 CREATE INDEX system_categories_set_locale_idx ON system_categories(category_set, locale);
@@ -95,7 +64,20 @@ CREATE INDEX categories_system_id_idx ON categories(system_category_id);
 CREATE INDEX categories_path_idx ON categories(path);
 CREATE INDEX categories_sort_order_idx ON categories(user_id, parent_id, sort_order);
 
+-- Create index on user_id for better performance
+CREATE INDEX expenses_user_id_idx ON expenses(user_id);
+
+-- Create index on category_id for better performance
+CREATE INDEX expenses_category_id_idx ON expenses(category_id);
+
+-- Create index on date for better performance
+CREATE INDEX expenses_date_idx ON expenses(date);
+
+-- Create index on created_at for pagination performance
+CREATE INDEX expenses_created_at_idx ON expenses(created_at);
+
 -- Enable Row Level Security (RLS)
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_categories ENABLE ROW LEVEL SECURITY;
 
@@ -118,6 +100,19 @@ CREATE POLICY "Users can update own categories" ON categories
 
 CREATE POLICY "Users can delete own categories" ON categories
     FOR DELETE USING (auth.uid() = user_id AND is_default = FALSE);
+
+-- RLS Policies for expenses
+CREATE POLICY "Users can view own expenses" ON expenses
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own expenses" ON expenses
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own expenses" ON expenses
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own expenses" ON expenses
+    FOR DELETE USING (auth.uid() = user_id);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

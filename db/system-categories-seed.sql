@@ -66,7 +66,7 @@ INSERT INTO system_categories (parent_id, name, display_name, color, chart_color
 ((SELECT id FROM system_categories WHERE name = 'Housing' AND category_set = 'default' AND locale = 'zh_CN'), 'Rent', '房租', 'brown', '#795548', 'mdi-home', 1, 'default', 'zh_CN'),
 ((SELECT id FROM system_categories WHERE name = 'Housing' AND category_set = 'default' AND locale = 'zh_CN'), 'Utilities', '水电费', 'brown', '#795548', 'mdi-flash', 2, 'default', 'zh_CN'),
 ((SELECT id FROM system_categories WHERE name = 'Housing' AND category_set = 'default' AND locale = 'zh_CN'), 'Gas', '燃气费', 'brown', '#795548', 'mdi-fire', 3, 'default', 'zh_CN'),
-((SELECT id FROM system_categories WHERE name = 'Housing' AND category_set = 'default' AND locale = 'zh_CN'), 'Maintenance', '房屋维修', 'brown', '#795548', 'mdi-wrench', 4, 'default', 'zh_CN');
+((SELECT id FROM system_categories WHERE name = 'Housing' AND category_set = 'default' AND locale = 'zh_CN'), 'HouseMaintenance', '房屋维修', 'brown', '#795548', 'mdi-wrench', 4, 'default', 'zh_CN');
 
 -- Insert subcategories (level 1) - Communication
 INSERT INTO system_categories (parent_id, name, display_name, color, chart_color, icon, sort_order, category_set, locale) VALUES
@@ -81,7 +81,7 @@ INSERT INTO system_categories (parent_id, name, display_name, color, chart_color
 
 -- Insert subcategories (level 1) - Education
 INSERT INTO system_categories (parent_id, name, display_name, color, chart_color, icon, sort_order, category_set, locale) VALUES
-((SELECT id FROM system_categories WHERE name = 'Education' AND category_set = 'default' AND locale = 'zh_CN'), 'Books', '教材', 'indigo', '#3F51B5', 'mdi-book-open', 1, 'default', 'zh_CN'),
+((SELECT id FROM system_categories WHERE name = 'Education' AND category_set = 'default' AND locale = 'zh_CN'), 'Textbooks', '教材', 'indigo', '#3F51B5', 'mdi-book-open', 1, 'default', 'zh_CN'),
 ((SELECT id FROM system_categories WHERE name = 'Education' AND category_set = 'default' AND locale = 'zh_CN'), 'Books', '书籍', 'indigo', '#3F51B5', 'mdi-book', 2, 'default', 'zh_CN'),
 ((SELECT id FROM system_categories WHERE name = 'Education' AND category_set = 'default' AND locale = 'zh_CN'), 'Supplies', '学习用品', 'indigo', '#3F51B5', 'mdi-pencil', 3, 'default', 'zh_CN');
 
@@ -99,7 +99,7 @@ INSERT INTO system_categories (parent_id, name, display_name, color, chart_color
 -- Insert subcategories (level 1) - Automotive
 INSERT INTO system_categories (parent_id, name, display_name, color, chart_color, icon, sort_order, category_set, locale) VALUES
 ((SELECT id FROM system_categories WHERE name = 'Automotive' AND category_set = 'default' AND locale = 'zh_CN'), 'Insurance', '车险', 'blue-grey', '#607D8B', 'mdi-shield-car', 1, 'default', 'zh_CN'),
-((SELECT id FROM system_categories WHERE name = 'Automotive' AND category_set = 'default' AND locale = 'zh_CN'), 'Maintenance', '汽车保养', 'blue-grey', '#607D8B', 'mdi-car-wrench', 2, 'default', 'zh_CN'),
+((SELECT id FROM system_categories WHERE name = 'Automotive' AND category_set = 'default' AND locale = 'zh_CN'), 'CarMaintenance', '汽车保养', 'blue-grey', '#607D8B', 'mdi-car-wrench', 2, 'default', 'zh_CN'),
 ((SELECT id FROM system_categories WHERE name = 'Automotive' AND category_set = 'default' AND locale = 'zh_CN'), 'Registration', '车辆年检', 'blue-grey', '#607D8B', 'mdi-card-account-details', 3, 'default', 'zh_CN');
 
 -- Verify the data was inserted correctly
