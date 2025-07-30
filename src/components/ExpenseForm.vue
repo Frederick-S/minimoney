@@ -51,6 +51,16 @@
             </template>
           </v-select>
           
+          <v-text-field
+            v-model="date"
+            label="日期"
+            type="date"
+            variant="outlined"
+            class="mb-4"
+            :rules="[v => !!v || '请选择日期']"
+            required
+          />
+          
           <v-textarea
             v-model="note"
             label="备注"
@@ -76,7 +86,7 @@
           color="primary"
           variant="flat"
           @click="handleSave"
-          :disabled="!amount"
+          :disabled="!amount || !category || !date"
         >
           {{ props.expense ? '更新' : '保存' }}
         </v-btn>
@@ -106,7 +116,19 @@ const {
 const showForm = ref(props.modelValue)
 const amount = ref('')
 const category = ref<string>('')
+const date = ref('')
 const note = ref('')
+
+// Helper function to format date for input (YYYY-MM-DD)
+const formatDateForInput = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toISOString().split('T')[0]
+}
+
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayDate = (): string => {
+  return new Date().toISOString().split('T')[0]
+}
 
 // Load categories when component mounts
 onMounted(async () => {
@@ -122,6 +144,11 @@ onMounted(async () => {
   if (!category.value && categoryOptions.value.length > 0) {
     category.value = categoryOptions.value[0].value
   }
+  
+  // Set default date to today for new expenses
+  if (!props.expense && !date.value) {
+    date.value = getTodayDate()
+  }
 })
 
 watch(() => props.modelValue, (newValue) => {
@@ -130,7 +157,11 @@ watch(() => props.modelValue, (newValue) => {
     // Populate form with existing expense data
     amount.value = props.expense.amount.toString()
     category.value = props.expense.categoryId
+    date.value = formatDateForInput(props.expense.date)
     note.value = props.expense.note || ''
+  } else if (newValue && !props.expense) {
+    // Set default date for new expense
+    date.value = getTodayDate()
   }
 })
 
@@ -138,6 +169,7 @@ watch(() => props.expense, (newExpense) => {
   if (newExpense) {
     amount.value = newExpense.amount.toString()
     category.value = newExpense.categoryId
+    date.value = formatDateForInput(newExpense.date)
     note.value = newExpense.note || ''
   }
 })
@@ -154,6 +186,7 @@ const closeForm = () => {
 const resetForm = () => {
   amount.value = ''
   note.value = ''
+  date.value = getTodayDate()
   // Reset to first available category
   if (categoryOptions.value.length > 0) {
     category.value = categoryOptions.value[0].value
@@ -161,12 +194,12 @@ const resetForm = () => {
 }
 
 const handleSave = () => {
-  if (!amount.value || !category.value) return
+  if (!amount.value || !category.value || !date.value) return
   
   const expenseData = {
     amount: parseFloat(amount.value),
     categoryId: category.value,
-    date: props.expense ? props.expense.date : new Date().toISOString(),
+    date: date.value + 'T00:00:00.000Z', // Convert YYYY-MM-DD to ISO string
     note: note.value.trim() || undefined
   }
   
