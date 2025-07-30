@@ -52,16 +52,6 @@
             </v-form>
 
             <v-alert
-              v-if="error"
-              type="error"
-              class="mt-4"
-              closable
-              @click:close="error = ''"
-            >
-              {{ error }}
-            </v-alert>
-
-            <v-alert
               v-if="successMessage"
               type="info"
               class="mt-4"
@@ -89,7 +79,6 @@ const isLogin = ref(true)
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
-const error = ref('')
 const successMessage = ref('')
 
 const emailRules = [
@@ -104,7 +93,6 @@ const passwordRules = [
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value
-  error.value = ''
   successMessage.value = ''
 }
 
@@ -112,7 +100,6 @@ const handleSubmit = async () => {
   if (!email.value || !password.value) return
 
   loading.value = true
-  error.value = ''
   successMessage.value = ''
 
   try {
@@ -121,7 +108,7 @@ const handleSubmit = async () => {
       : await signUp(email.value, password.value)
 
     if (authError) {
-      error.value = authError.message
+      // Error is now handled by toast in useSupabase
     } else if (isLogin.value) {
       // Successful login - redirect to home
       router.push('/')
@@ -130,7 +117,7 @@ const handleSubmit = async () => {
       successMessage.value = '注册成功！请检查邮箱确认注册。'
     }
   } catch (err) {
-    error.value = '操作失败，请重试'
+    // Error is now handled by toast in useSupabase
   } finally {
     loading.value = false
   }
