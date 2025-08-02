@@ -51,7 +51,6 @@ export function useSupabase() {
 
       // If no categories exist, initialize them
       if (!existingCategories || existingCategories.length === 0) {
-        console.log('Initializing categories for new user:', userId)
         await initializeUserCategoriesForNewUser(userId)
       }
     } catch (error) {

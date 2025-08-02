@@ -117,25 +117,7 @@ export function useCategories() {
     return category?.chartColor || '#757575'
   }
 
-  /**
-   * Get category options for form inputs (level 0 and level 1 categories)
-   */
-  const categoryOptions = computed(() => {
-    return categories.value
-      .filter(cat => cat.level <= 1) // Only show top-level and first-level subcategories
-      .map(cat => ({
-        text: cat.displayName,
-        value: cat.id,
-        icon: cat.icon,
-        level: cat.level,
-        parentId: cat.parentId
-      }))
-      .sort((a, b) => {
-        // Sort by level first, then by display name
-        if (a.level !== b.level) return a.level - b.level
-        return a.text.localeCompare(b.text)
-      })
-  })
+
 
   /**
    * Get top-level categories (level 0)
@@ -154,7 +136,6 @@ export function useCategories() {
   return {
     categories,
     categoriesLoaded,
-    categoryOptions,
     topLevelCategories,
     loadCategories,
     initializeUserCategories,

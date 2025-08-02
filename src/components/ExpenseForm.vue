@@ -6,10 +6,15 @@
     :fullscreen="$vuetify.display.mobile"
   >
     <v-card>
-      <v-toolbar color="primary" dark>
+      <v-toolbar color="primary" dark style="position: relative; z-index: 10;">
         <v-toolbar-title>{{ props.expense ? '编辑支出' : '添加支出' }}</v-toolbar-title>
         <v-spacer />
-        <v-btn icon @click="closeForm">
+        <v-btn 
+          icon 
+          @click="closeForm"
+          style="z-index: 11; position: relative;"
+          data-testid="close-button"
+        >
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-toolbar>
@@ -29,27 +34,12 @@
             class="mb-4"
           />
           
-          <v-select
+          <CategoryTreeSelector
             v-model="category"
-            :items="categoryOptions"
-            item-title="text"
-            item-value="value"
-            label="分类"
-            variant="outlined"
-            class="mb-4"
+            :categories="categories"
             :loading="!categoriesLoaded"
-          >
-            <template #item="{ props: itemProps, item }">
-              <v-list-item v-bind="itemProps">
-                <template #prepend>
-                  <v-icon :icon="item.raw.icon" class="mr-2" />
-                </template>
-                <v-list-item-title>
-                  {{ item.raw.level > 0 ? '　'.repeat(item.raw.level) + item.raw.text : item.raw.text }}
-                </v-list-item-title>
-              </v-list-item>
-            </template>
-          </v-select>
+            @select="onCategorySelected"
+          />
           
           <v-text-field
             v-model="date"
@@ -88,6 +78,7 @@
           variant="outlined" 
           @click="closeForm"
           class="mr-2"
+          data-testid="cancel-button"
         >
           取消
         </v-btn>
@@ -108,7 +99,8 @@
 import { ref, watch, defineProps, defineEmits, onMounted } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useCategories } from '../composables/useCategories'
-import { type Expense, type ExpenseFormProps, type ExpenseFormEmits } from '../types'
+import CategoryTreeSelector from './CategoryTreeSelector.vue'
+import { type Expense, type ExpenseFormProps, type ExpenseFormEmits, type Category } from '../types'
 
 const props = defineProps<ExpenseFormProps>()
 const emit = defineEmits<ExpenseFormEmits>()
@@ -117,7 +109,6 @@ const { supabase } = useSupabase()
 const { 
   categories, 
   categoriesLoaded, 
-  categoryOptions, 
   loadCategories, 
   initializeUserCategories 
 } = useCategories()
@@ -149,9 +140,10 @@ onMounted(async () => {
     }
   }
   
-  // Set default category if none selected
-  if (!category.value && categoryOptions.value.length > 0) {
-    category.value = categoryOptions.value[0].value
+  // Set default category if none selected (use first available category)
+  if (!category.value && categories.value.length > 0) {
+    const firstSelectableCategory = categories.value.find(cat => cat.level > 0) || categories.value[0]
+    category.value = firstSelectableCategory.id
   }
   
   // Set default date to today for new expenses
@@ -197,9 +189,14 @@ const resetForm = () => {
   note.value = ''
   date.value = getTodayDate()
   // Reset to first available category
-  if (categoryOptions.value.length > 0) {
-    category.value = categoryOptions.value[0].value
+  if (categories.value.length > 0) {
+    const firstSelectableCategory = categories.value.find(cat => cat.level > 0) || categories.value[0]
+    category.value = firstSelectableCategory.id
   }
+}
+
+const onCategorySelected = (selectedCategory: Category) => {
+  // Category is already set by v-model, but we can add additional logic here if needed
 }
 
 const handleSave = () => {
