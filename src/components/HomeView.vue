@@ -7,7 +7,7 @@
     
     <template v-else>
       <TodaySummary :expenses="expenses" />
-      <ExpenseList :expenses="expenses" @edit="handleEditExpense" />
+      <ExpenseList :expenses="expenses" @edit="openFormForEdit" />
       
       <!-- Load More Button -->
       <div v-if="hasMoreExpenses" class="text-center py-4">
@@ -36,6 +36,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useExpenseManagement } from '../composables/useExpenseManagement'
 import { useCategories } from '../composables/useCategories'
+import { useExpenseForm } from '../composables/useExpenseForm'
 import { useToast } from '../composables/useToast'
 import TodaySummary from './TodaySummary.vue'
 import ExpenseList from './ExpenseList.vue'
@@ -44,11 +45,13 @@ import { type Expense, type HomeViewProps, type HomeViewEmits } from '../types'
 const props = withDefaults(defineProps<HomeViewProps>(), {
   refreshTrigger: 0
 })
-const emit = defineEmits<HomeViewEmits>()
+// Remove emit since we now use the composable directly
+// const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
 const { refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
 const { loadCategories, initializeUserCategories } = useCategories()
+const { openFormForEdit } = useExpenseForm()
 const { showError } = useToast()
 
 const expenses = ref<Expense[]>([])
@@ -112,10 +115,7 @@ const loadMoreExpenses = async () => {
   loadingMore.value = false
 }
 
-// Handle editing an expense
-const handleEditExpense = (expense: Expense) => {
-  emit('edit', expense)
-}
+// Note: Edit handling is now done directly through useExpenseForm composable
 
 // Initialize data
 onMounted(async () => {

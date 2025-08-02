@@ -178,7 +178,7 @@ interface CategoryTreeItem extends Category {
 }
 
 interface Props {
-  modelValue: string
+  modelValue?: string
   categories: Category[]
   loading?: boolean
 }
@@ -197,8 +197,12 @@ const openGroups = ref<string[]>([])
 
 
 // Track if the entire tree is expanded or collapsed  
-// Start collapsed for new expenses (no modelValue), expanded if editing (has modelValue)
-const isExpanded = ref(!!props.modelValue)
+// Always start collapsed - user must click to expand
+const isExpanded = ref(false)
+
+
+
+
 
 
 
@@ -351,12 +355,10 @@ const selectedCategoryColor = computed(() => {
 })
 
 // Watch for modelValue changes to manage expansion state
-watch(() => props.modelValue, (newValue) => {
-  if (!newValue) {
-    // If no category selected (new expense), keep collapsed
-    isExpanded.value = false
-    forceCloseAllGroups()
-  }
+watch(() => props.modelValue, async (newValue) => {
+  // Always keep tree collapsed initially - user must click to expand
+  isExpanded.value = false
+  forceCloseAllGroups()
 }, { immediate: true })
 
 // Watch for categories loading to ensure groups start closed

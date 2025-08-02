@@ -113,12 +113,6 @@ const {
   initializeUserCategories 
 } = useCategories()
 
-const showForm = ref(props.modelValue)
-const amount = ref('')
-const category = ref<string>('')
-const date = ref('')
-const note = ref('')
-
 // Helper function to format date for input (YYYY-MM-DD)
 const formatDateForInput = (dateString: string): string => {
   const date = new Date(dateString)
@@ -130,6 +124,40 @@ const getTodayDate = (): string => {
   return new Date().toISOString().split('T')[0]
 }
 
+const showForm = ref(props.modelValue)
+const amount = ref('')
+const category = ref<string>('')
+const date = ref('')
+const note = ref('')
+
+// Initialize form data based on props
+const initializeForm = () => {
+  if (props.expense) {
+    // Use category_id (snake_case) from database, not categoryId (camelCase)
+    const categoryId = (props.expense as any).category_id || props.expense.categoryId
+    
+    amount.value = props.expense.amount?.toString() || ''
+    category.value = categoryId || ''
+    date.value = formatDateForInput(props.expense.date)
+    note.value = props.expense.note || ''
+    
+
+  } else {
+    // New expense - reset to defaults
+    amount.value = ''
+    category.value = ''
+    date.value = getTodayDate()
+    note.value = ''
+    
+
+  }
+}
+
+// Initialize on mount
+initializeForm()
+
+
+
 // Load categories when component mounts
 onMounted(async () => {
   if (categories.value.length === 0) {
@@ -140,11 +168,7 @@ onMounted(async () => {
     }
   }
   
-  // For editing existing expenses, ensure a valid category is selected
-  if (props.expense && !category.value && categories.value.length > 0) {
-    const firstSelectableCategory = categories.value.find(cat => cat.level > 0) || categories.value[0]
-    category.value = firstSelectableCategory.id
-  }
+  // Note: Category is now initialized directly from props.expense.categoryId
   
   // Set default date to today for new expenses
   if (!props.expense && !date.value) {
@@ -152,27 +176,18 @@ onMounted(async () => {
   }
 })
 
+// Watch for form visibility changes
 watch(() => props.modelValue, (newValue) => {
   showForm.value = newValue
-  if (newValue && props.expense) {
-    // Populate form with existing expense data
-    amount.value = props.expense.amount.toString()
-    category.value = props.expense.categoryId
-    date.value = formatDateForInput(props.expense.date)
-    note.value = props.expense.note || ''
-  } else if (newValue && !props.expense) {
-    // Set default date for new expense
-    date.value = getTodayDate()
+  if (newValue) {
+    // Re-initialize form data when dialog opens
+    initializeForm()
   }
 })
 
-watch(() => props.expense, (newExpense) => {
-  if (newExpense) {
-    amount.value = newExpense.amount.toString()
-    category.value = newExpense.categoryId
-    date.value = formatDateForInput(newExpense.date)
-    note.value = newExpense.note || ''
-  }
+// Watch for expense changes (when editing different expenses)
+watch(() => props.expense, () => {
+  initializeForm()
 })
 
 watch(showForm, (newValue) => {

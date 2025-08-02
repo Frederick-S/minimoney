@@ -26,7 +26,6 @@
         >
           <router-view 
             :refresh-trigger="refreshTrigger"
-            @edit="handleEditExpense"
           />
         </div>
 
@@ -37,7 +36,7 @@
             size="56"
             color="primary"
             icon="mdi-plus"
-            @click="() => { editingExpense = null; showForm = true }"
+            @click="openFormForNew"
           />
         </div>
 
@@ -68,6 +67,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSupabase } from './composables/useSupabase'
+import { useExpenseForm } from './composables/useExpenseForm'
 import { useExpenseManagement } from './composables/useExpenseManagement'
 import AppHeader from './components/AppHeader.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
@@ -78,11 +78,10 @@ import { type Expense } from './types'
 
 const { user, loading, signOut, initAuth } = useSupabase()
 const { refreshTrigger } = useExpenseManagement()
+const { showForm, editingExpense, openFormForNew, openFormForEdit } = useExpenseForm()
 const router = useRouter()
 
-const showForm = ref(false)
 const showPasswordChange = ref(false)
-const editingExpense = ref<Expense | null>(null)
 
 // Initialize auth on app load
 onMounted(async () => {
@@ -94,11 +93,7 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
-// Handle editing an expense
-const handleEditExpense = (expense: Expense) => {
-  editingExpense.value = expense
-  showForm.value = true
-}
+// Note: handleEditExpense is now handled through useExpenseForm composable
 </script>
 
 <style scoped>
