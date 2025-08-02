@@ -79,14 +79,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useSupabase } from '@/composables/useSupabase'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
-const { signIn, signUp } = useSupabase()
-const { showError } = useToast()
+const route = useRoute()
+const { signIn, signUp, supabase } = useSupabase()
+const { showError, showSuccess } = useToast()
 
 const isLogin = ref(true)
 const email = ref('')
@@ -144,4 +145,37 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
+// Handle email confirmation from URL
+onMounted(async () => {
+  // Check if this is an email confirmation redirect
+  const fullPath = route.fullPath
+  if (fullPath.includes('access_token=') || fullPath.includes('refresh_token=')) {
+    loading.value = true
+    try {
+      // Let Supabase handle the session from URL
+      const { data, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        showError('邮箱确认失败：' + error.message)
+      } else if (data.session) {
+        showSuccess('邮箱确认成功！欢迎使用！')
+        // Redirect to home after successful confirmation
+        setTimeout(() => {
+          router.push('/')
+        }, 2000)
+      } else {
+        // Try to get session from URL hash
+        const { error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) {
+          showError('确认邮箱时发生错误，请重试')
+        }
+      }
+    } catch (err) {
+      showError('处理邮箱确认时发生错误')
+    } finally {
+      loading.value = false
+    }
+  }
+})
 </script>

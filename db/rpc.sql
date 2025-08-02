@@ -283,14 +283,18 @@ DECLARE
     new_category_id UUID;
     existing_count INTEGER;
 BEGIN
-    -- Check if user already has categories
+    -- Check if user already has system categories from this set
     SELECT COUNT(*) INTO existing_count
-    FROM categories 
-    WHERE user_id = user_uuid;
+    FROM categories c
+    JOIN system_categories sc ON c.system_category_id = sc.id
+    WHERE c.user_id = user_uuid 
+      AND sc.category_set = p_category_set 
+      AND sc.locale = p_locale;
     
-    -- If user has categories, skip
+    -- If user already has system categories from this set, skip
     IF existing_count > 0 THEN
-        RAISE NOTICE 'User % already has % categories. Skipping duplication.', user_uuid, existing_count;
+        RAISE NOTICE 'User % already has % system categories from set "%" with locale "%". Skipping duplication.', 
+                     user_uuid, existing_count, p_category_set, p_locale;
         RETURN;
     END IF;
     
