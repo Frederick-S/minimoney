@@ -12,6 +12,7 @@ export interface Expense {
   note?: string
   userId?: string
   createdAt?: string
+  updatedAt?: string
 }
 
 /**

@@ -43,10 +43,14 @@ export function useExpenseManagement() {
   const saveExpense = async (expense: Omit<Expense, 'id'>) => {
     if (!user.value) return
 
+    const now = new Date().toISOString()
+    
     // Convert camelCase to snake_case for database
     const dbExpense = convertKeysToSnakeCase({
       ...expense,
-      userId: user.value.id
+      userId: user.value.id,
+      createdAt: now,
+      updatedAt: now
     })
 
     const { data, error } = await supabase
@@ -69,12 +73,15 @@ export function useExpenseManagement() {
   const updateExpense = async (expense: Expense) => {
     if (!user.value) return
 
+    const now = new Date().toISOString()
+
     // Convert camelCase to snake_case for database
     const dbExpense = convertKeysToSnakeCase({
       amount: expense.amount,
       categoryId: expense.categoryId,
       note: expense.note,
-      date: expense.date
+      date: expense.date,
+      updatedAt: now
     })
 
     const { data, error } = await supabase

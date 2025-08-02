@@ -52,7 +52,8 @@ CREATE TABLE expenses (
     category_id UUID REFERENCES categories(id) ON DELETE RESTRICT,
     note TEXT,
     date DATE NOT NULL DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
 -- Create indexes for better performance
@@ -69,6 +70,9 @@ CREATE INDEX expenses_user_id_idx ON expenses(user_id);
 
 -- Create index on category_id for better performance
 CREATE INDEX expenses_category_id_idx ON expenses(category_id);
+
+-- Create index on date and updated_at for better sorting performance
+CREATE INDEX expenses_date_updated_at_idx ON expenses(date DESC, updated_at DESC);
 
 -- Create index on date for better performance
 CREATE INDEX expenses_date_idx ON expenses(date);
