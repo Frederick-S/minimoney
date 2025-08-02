@@ -11,9 +11,9 @@
 1. Go to your Supabase dashboard
 2. Navigate to SQL Editor
 3. Run the database setup in this order:
-   a. Copy and paste the contents of `db/schema.sql` to create tables and functions
-   b. Copy and paste the contents of `db/system-categories-seed.sql` to populate default categories
-   c. Copy and paste the contents of `db/rpc.sql` to create RPC functions
+   1. Copy and paste the contents of `db/schema.sql` to create tables and functions
+   2. Copy and paste the contents of `db/system-categories-seed.sql` to populate default categories
+   3. Copy and paste the contents of `db/rpc.sql` to create RPC functions
 4. Verify tables are created: `system_categories`, `categories`, and `expenses`
 
 ## 3. Configure Environment Variables
@@ -42,18 +42,6 @@ The database is configured with Row Level Security (RLS) to ensure:
 - Users can only modify their own data
 - Data is properly isolated between users
 
-## Features Included
-
-- ✅ User registration and login with automatic category initialization
-- ✅ Dynamic hierarchical category system with Chinese localization
-- ✅ Secure expense storage per user with category relationships
-- ✅ Real-time data sync with Supabase
-- ✅ Toast notifications for user feedback
-- ✅ Category management with Material Design icons
-- ✅ Expense charts and analytics with dynamic categories
-- ✅ Logout functionality
-- ✅ User profile display in header
-
 ## Database Schema
 
 The application uses a dynamic hierarchical category system. See the following files for complete schema details:
@@ -61,14 +49,6 @@ The application uses a dynamic hierarchical category system. See the following f
 - **Schema Definition**: `db/schema.sql` - Complete table structures, triggers, and RLS policies
 - **Category Seed Data**: `db/system-categories-seed.sql` - Default categories with Chinese localization
 - **RPC Functions**: `db/rpc.sql` - Data processing and aggregation functions
-
-### Key Features
-- **Hierarchical Categories**: Up to 3 levels deep (Food → Restaurant → FastFood)
-- **Auto-initialization**: New users get complete category set automatically
-- **Localization**: Chinese display names with English internal identifiers
-- **Material Design**: Consistent iconography with mdi- prefix
-- **Color Coding**: Separate UI and chart colors for better visualization
-- **Template System**: Admin-managed templates copied to user categories
 
 ## Development Reset (Optional)
 
