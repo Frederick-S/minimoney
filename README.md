@@ -1,4 +1,4 @@
-# Minimoney
+# Minimoney [![Node.js CI](https://github.com/Frederick-S/minimoney/actions/workflows/node.js.yml/badge.svg)](https://github.com/Frederick-S/minimoney/actions/workflows/node.js.yml)
 
 A minimalist expense tracker designed for personal use—no ads, no social features, no unnecessary complexity. Built entirely with AI assistance.
 
