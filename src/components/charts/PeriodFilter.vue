@@ -13,6 +13,7 @@
       >
         <v-chip value="month" variant="outlined">月度</v-chip>
         <v-chip value="year" variant="outlined">年度</v-chip>
+        <v-chip value="all" variant="outlined">全部</v-chip>
       </v-chip-group>
 
       <v-select

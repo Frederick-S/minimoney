@@ -48,7 +48,6 @@ export interface ExpenseFormEmits {
   (e: 'update:modelValue', value: boolean): void
   (e: 'save', expense: Omit<Expense, 'id'>): void
   (e: 'update', expense: Expense): void
-  (e: 'delete', expenseId: string): void
 }
 
 /**
@@ -56,6 +55,7 @@ export interface ExpenseFormEmits {
  */
 export interface ExpenseListEmits {
   (e: 'edit', expense: Expense): void
+  (e: 'delete', expenseId: string): void
 }
 
 /**
@@ -69,7 +69,7 @@ export interface ChartProps {
  * Props for period filter component
  */
 export interface PeriodFilterProps {
-  modelPeriodType: 'month' | 'year'
+  modelPeriodType: 'month' | 'year' | 'all'
   modelMonth: string
   modelYear: string
 }
@@ -78,7 +78,7 @@ export interface PeriodFilterProps {
  * Emits for period filter component
  */
 export interface PeriodFilterEmits {
-  (e: 'update:modelPeriodType', value: 'month' | 'year'): void
+  (e: 'update:modelPeriodType', value: 'month' | 'year' | 'all'): void
   (e: 'update:modelMonth', value: string): void
   (e: 'update:modelYear', value: string): void
 }

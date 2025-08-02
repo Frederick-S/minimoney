@@ -109,7 +109,40 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. Get period summary (total amount and count)
+-- 4. Get yearly trend data for all time
+CREATE OR REPLACE FUNCTION get_yearly_trend(
+  p_user_id UUID
+) RETURNS TABLE(
+  year INTEGER,
+  year_label TEXT,
+  amount NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  WITH year_range AS (
+    SELECT 
+      generate_series(
+        COALESCE(
+          (SELECT EXTRACT(YEAR FROM MIN(date))::INTEGER FROM expenses WHERE user_id = p_user_id),
+          EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER
+        ),
+        EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER
+      ) as year_num
+  )
+  SELECT 
+    yr.year_num as year,
+    yr.year_num || '年' as year_label,
+    COALESCE(SUM(e.amount), 0) as amount
+  FROM year_range yr
+  LEFT JOIN expenses e ON 
+    e.user_id = p_user_id 
+    AND EXTRACT(YEAR FROM e.date) = yr.year_num
+  GROUP BY yr.year_num
+  ORDER BY yr.year_num;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5. Get period summary (total amount and count)
 CREATE OR REPLACE FUNCTION get_period_summary(
   p_user_id UUID,
   p_start_date DATE,

@@ -154,6 +154,28 @@ export function useExpenseManagement() {
     }
   }
 
+  // Get yearly trend data using RPC
+  const getYearlyTrend = async (): Promise<MonthlyTrendData[]> => {
+    if (!user.value) return []
+
+    const { data, error } = await supabase.rpc('get_yearly_trend', {
+      p_user_id: user.value.id
+    })
+
+    if (error) {
+      console.error('Error getting yearly trend:', error)
+      throw new Error('获取年度趋势失败')
+    } else {
+      // Map yearly data to match MonthlyTrendData interface
+      const yearlyData = data || []
+      return yearlyData.map((item: any) => ({
+        month: item.year,
+        monthLabel: item.year_label, // Map year_label to monthLabel for chart compatibility
+        amount: item.amount
+      }))
+    }
+  }
+
   // Get period summary using RPC
   const getPeriodSummary = async (startDate: string, endDate: string): Promise<PeriodSummaryData> => {
     if (!user.value) return { totalAmount: 0, expenseCount: 0 }
@@ -218,6 +240,7 @@ export function useExpenseManagement() {
     loadAllExpenses,
     getCategoryBreakdown,
     getMonthlyTrend,
+    getYearlyTrend,
     getPeriodSummary,
     getPeriodExpenses,
     // Export conversion utilities
