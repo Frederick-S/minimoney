@@ -20,11 +20,60 @@ const loading = ref(true)
 const initialized = ref(false)
 
 export function useSupabase() {
+  // Function to initialize user categories for new users
+  const initializeUserCategoriesForNewUser = async (userId: string) => {
+    const { error } = await supabase.rpc('create_categories_for_new_user', {
+      user_uuid: userId,
+      p_category_set: 'default',
+      p_locale: 'zh_CN'
+    })
+
+    if (error) {
+      console.error('Error initializing user categories:', error)
+      throw error
+    }
+  }
+
+  // Function to check if user has categories and initialize if needed
+  const ensureUserHasCategories = async (userId: string) => {
+    try {
+      // Check if user has any categories
+      const { data: existingCategories, error } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1)
+
+      if (error) {
+        console.error('Error checking user categories:', error)
+        return
+      }
+
+      // If no categories exist, initialize them
+      if (!existingCategories || existingCategories.length === 0) {
+        await initializeUserCategoriesForNewUser(userId)
+      }
+    } catch (error) {
+      console.error('Error ensuring user has categories:', error)
+    }
+  }
+
   const signUp = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
     })
+    
+    if (data.user && !error) {
+      // Initialize user categories after successful signup
+      try {
+        await initializeUserCategoriesForNewUser(data.user.id)
+      } catch (categoryError) {
+        console.error('Failed to initialize categories for new user:', categoryError)
+        // Don't show error to user as signup was successful, just log it
+      }
+    }
+    
     return { data, error }
   }
 
@@ -33,6 +82,7 @@ export function useSupabase() {
       email,
       password,
     })
+    
     return { data, error }
   }
 
@@ -41,6 +91,7 @@ export function useSupabase() {
     // Clear user state immediately on sign out
     user.value = null
     session.value = null
+    
     return { error }
   }
 
@@ -48,6 +99,7 @@ export function useSupabase() {
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword
     })
+    
     return { data, error }
   }
 
@@ -69,24 +121,29 @@ export function useSupabase() {
       } else {
         session.value = initialSession
         user.value = initialSession?.user ?? null
+        
+        // If user is already signed in, ensure they have categories
+        if (initialSession?.user?.id) {
+          ensureUserHasCategories(initialSession.user.id)
+        }
       }
       
       // Listen for auth changes (login, logout, token refresh)
       supabase.auth.onAuthStateChange(async (event, newSession) => {
-        console.log('Auth state change:', event, newSession?.user?.email)
-        
         session.value = newSession
         user.value = newSession?.user ?? null
         
         // Handle token expiration
         if (event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed successfully')
+          // Token refreshed successfully
         } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out')
           session.value = null
           user.value = null
         } else if (event === 'SIGNED_IN') {
-          console.log('User signed in')
+          // User signed in - ensure they have categories
+          if (newSession?.user?.id) {
+            ensureUserHasCategories(newSession.user.id)
+          }
         }
         
         loading.value = false

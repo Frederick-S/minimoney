@@ -1,6 +1,37 @@
 import { ref } from 'vue'
 import { useSupabase } from './useSupabase'
-import { type Expense } from '../types'
+import { type Expense, type CategoryBreakdownData, type MonthlyTrendData, type PeriodSummaryData } from '../types'
+
+// Helper functions to convert between snake_case (database) and camelCase (TypeScript)
+const toCamelCase = (str: string): string => {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+}
+
+const convertKeysToCamelCase = <T extends Record<string, any>>(obj: any): T => {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertKeysToCamelCase(item)) as unknown as T
+  }
+  
+  const result: any = {}
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = toCamelCase(key)
+    result[camelKey] = convertKeysToCamelCase(value)
+  }
+  return result
+}
+
+const convertKeysToSnakeCase = (obj: Record<string, any>): Record<string, any> => {
+  const result: any = {}
+  for (const [key, value] of Object.entries(obj)) {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
+    result[snakeKey] = value
+  }
+  return result
+}
 
 // Global singleton state for expense management
 const refreshTrigger = ref(0)
@@ -12,25 +43,29 @@ export function useExpenseManagement() {
   const saveExpense = async (expense: Omit<Expense, 'id'>) => {
     if (!user.value) return
 
-    const newExpense = {
+    const now = new Date().toISOString()
+    
+    // Convert camelCase to snake_case for database
+    const dbExpense = convertKeysToSnakeCase({
       ...expense,
-      user_id: user.value.id
-    }
+      userId: user.value.id,
+      createdAt: now,
+      updatedAt: now
+    })
 
     const { data, error } = await supabase
       .from('expenses')
-      .insert([newExpense])
+      .insert([dbExpense])
       .select()
       .single()
 
     if (error) {
       console.error('Error saving expense:', error)
-      throw error
+      throw new Error('保存支出失败，请重试')
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      console.log('Expense saved, refreshTrigger:', refreshTrigger.value)
-      return data
+      return convertKeysToCamelCase<Expense>(data)
     }
   }
 
@@ -38,31 +73,36 @@ export function useExpenseManagement() {
   const updateExpense = async (expense: Expense) => {
     if (!user.value) return
 
+    const now = new Date().toISOString()
+
+    // Convert camelCase to snake_case for database
+    const dbExpense = convertKeysToSnakeCase({
+      amount: expense.amount,
+      categoryId: expense.categoryId,
+      note: expense.note,
+      date: expense.date,
+      updatedAt: now
+    })
+
     const { data, error } = await supabase
       .from('expenses')
-      .update({
-        amount: expense.amount,
-        category: expense.category,
-        note: expense.note,
-        date: expense.date
-      })
+      .update(dbExpense)
       .eq('id', expense.id)
       .select()
       .single()
 
     if (error) {
       console.error('Error updating expense:', error)
-      throw error
+      throw new Error('更新支出失败，请重试')
     } else {
       // Trigger refresh in components
       refreshTrigger.value++
-      console.log('Expense updated, refreshTrigger:', refreshTrigger.value)
-      return data
+      return convertKeysToCamelCase<Expense>(data)
     }
   }
 
   // Load all expenses for charts view
-  const loadAllExpenses = async () => {
+  const loadAllExpenses = async (): Promise<Expense[]> => {
     if (!user.value) return []
 
     const { data, error } = await supabase
@@ -73,14 +113,14 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error loading all expenses:', error)
-      return []
+      throw new Error('加载支出数据失败')
     } else {
-      return data || []
+      return convertKeysToCamelCase<Expense[]>(data || [])
     }
   }
 
   // Get category breakdown using RPC
-  const getCategoryBreakdown = async (startDate: string, endDate: string) => {
+  const getCategoryBreakdown = async (startDate: string, endDate: string): Promise<CategoryBreakdownData[]> => {
     if (!user.value) return []
 
     const { data, error } = await supabase.rpc('get_category_breakdown', {
@@ -91,14 +131,14 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting category breakdown:', error)
-      return []
+      throw new Error('获取分类统计失败')
     } else {
-      return data || []
+      return convertKeysToCamelCase<CategoryBreakdownData[]>(data || [])
     }
   }
 
   // Get monthly trend data using RPC
-  const getMonthlyTrend = async (year: number) => {
+  const getMonthlyTrend = async (year: number): Promise<MonthlyTrendData[]> => {
     if (!user.value) return []
 
     const { data, error } = await supabase.rpc('get_monthly_trend', {
@@ -108,15 +148,15 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting monthly trend:', error)
-      return []
+      throw new Error('获取月度趋势失败')
     } else {
-      return data || []
+      return convertKeysToCamelCase<MonthlyTrendData[]>(data || [])
     }
   }
 
   // Get period summary using RPC
-  const getPeriodSummary = async (startDate: string, endDate: string) => {
-    if (!user.value) return { total_amount: 0, expense_count: 0 }
+  const getPeriodSummary = async (startDate: string, endDate: string): Promise<PeriodSummaryData> => {
+    if (!user.value) return { totalAmount: 0, expenseCount: 0 }
 
     const { data, error } = await supabase.rpc('get_period_summary', {
       p_user_id: user.value.id,
@@ -126,14 +166,15 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting period summary:', error)
-      return { total_amount: 0, expense_count: 0 }
+      throw new Error('获取统计摘要失败')
     } else {
-      return data?.[0] || { total_amount: 0, expense_count: 0 }
+      const result = data?.[0] || { total_amount: 0, expense_count: 0 }
+      return convertKeysToCamelCase<PeriodSummaryData>(result)
     }
   }
 
   // Get period expenses using RPC (still needed for some components)
-  const getPeriodExpenses = async (startDate: string, endDate: string) => {
+  const getPeriodExpenses = async (startDate: string, endDate: string): Promise<Expense[]> => {
     if (!user.value) return []
 
     const { data, error } = await supabase.rpc('get_period_expenses', {
@@ -144,9 +185,28 @@ export function useExpenseManagement() {
 
     if (error) {
       console.error('Error getting period expenses:', error)
-      return []
+      throw new Error('获取期间支出失败')
     } else {
-      return data || []
+      return convertKeysToCamelCase<Expense[]>(data || [])
+    }
+  }
+
+  // Delete expense from Supabase
+  const deleteExpense = async (expenseId: string) => {
+    if (!user.value) return
+
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', expenseId)
+      .eq('user_id', user.value.id) // Ensure user can only delete their own expenses
+
+    if (error) {
+      console.error('Error deleting expense:', error)
+      throw new Error('删除支出失败，请重试')
+    } else {
+      // Trigger refresh in components
+      refreshTrigger.value++
     }
   }
 
@@ -154,10 +214,14 @@ export function useExpenseManagement() {
     refreshTrigger,
     saveExpense,
     updateExpense,
+    deleteExpense,
     loadAllExpenses,
     getCategoryBreakdown,
     getMonthlyTrend,
     getPeriodSummary,
-    getPeriodExpenses
+    getPeriodExpenses,
+    // Export conversion utilities
+    convertKeysToCamelCase,
+    convertKeysToSnakeCase
   }
 }

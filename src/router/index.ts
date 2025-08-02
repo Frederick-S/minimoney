@@ -27,6 +27,12 @@ const routes = [
     component: ChartsView,
     props: true,
     meta: { requiresAuth: true }
+  },
+  {
+    // Catch-all route for Supabase auth redirects
+    path: '/:pathMatch(.*)*',
+    name: 'AuthHandler',
+    component: Auth
   }
 ]
 

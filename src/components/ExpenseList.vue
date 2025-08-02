@@ -22,11 +22,11 @@
             <div class="flex-grow-1">
               <div class="d-flex align-center ga-3 mb-2">
                 <v-chip 
-                  :color="getCategoryColor(expense.category)"
+                  :color="getCategoryColor(expense.categoryId)"
                   size="small"
                   variant="flat"
                 >
-                  {{ getCategoryName(expense.category) }}
+                  {{ getCategoryDisplayName(expense.categoryId) }}
                 </v-chip>
                 <span class="text-caption text-medium-emphasis">
                   {{ new Date(expense.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) }}
@@ -57,13 +57,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useCategories, type CategoryKey } from '../composables/useCategories'
+import { useCategories } from '../composables/useCategories'
 import { type Expense, type ExpenseListProps, type ExpenseListEmits } from '../types'
 
 const props = defineProps<ExpenseListProps>()
 const emit = defineEmits<ExpenseListEmits>()
 
-const { getCategoryName, getCategoryColor } = useCategories()
+const { getCategoryDisplayName, getCategoryColor } = useCategories()
 
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('zh-CN', {
@@ -73,8 +73,7 @@ const formatAmount = (amount: number) => {
 }
 
 const sortedExpenses = computed(() => 
-  [...props.expenses].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  ).slice(0, 10) // Show only last 10 expenses
+  // Data is already sorted from database, just limit to 10 items
+  props.expenses.slice(0, 10)
 )
 </script>

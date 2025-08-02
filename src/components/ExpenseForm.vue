@@ -6,10 +6,15 @@
     :fullscreen="$vuetify.display.mobile"
   >
     <v-card>
-      <v-toolbar color="primary" dark>
+      <v-toolbar color="primary" dark style="position: relative; z-index: 10;">
         <v-toolbar-title>{{ props.expense ? '编辑支出' : '添加支出' }}</v-toolbar-title>
         <v-spacer />
-        <v-btn icon @click="closeForm">
+        <v-btn 
+          icon 
+          @click="closeForm"
+          style="z-index: 11; position: relative;"
+          data-testid="close-button"
+        >
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-toolbar>
@@ -29,14 +34,21 @@
             class="mb-4"
           />
           
-          <v-select
+          <CategoryTreeSelector
             v-model="category"
-            :items="categoryOptions"
-            item-title="text"
-            item-value="value"
-            label="分类"
+            :categories="categories"
+            :loading="!categoriesLoaded"
+            @select="onCategorySelected"
+          />
+          
+          <v-text-field
+            v-model="date"
+            label="日期"
+            type="date"
             variant="outlined"
             class="mb-4"
+            :rules="[v => !!v || '请选择日期']"
+            required
           />
           
           <v-textarea
@@ -52,11 +64,21 @@
       </v-card-text>
 
       <v-card-actions class="pa-6 pt-0">
+        <v-btn 
+          v-if="props.expense"
+          color="error"
+          variant="outlined"
+          @click="handleDelete"
+          class="mr-2"
+        >
+          删除
+        </v-btn>
         <v-spacer />
         <v-btn 
           variant="outlined" 
           @click="closeForm"
           class="mr-2"
+          data-testid="cancel-button"
         >
           取消
         </v-btn>
@@ -64,7 +86,7 @@
           color="primary"
           variant="flat"
           @click="handleSave"
-          :disabled="!amount"
+          :disabled="!amount || !category || !date"
         >
           {{ props.expense ? '更新' : '保存' }}
         </v-btn>
@@ -74,40 +96,98 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineProps, defineEmits } from 'vue'
+import { ref, watch, defineProps, defineEmits, onMounted } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
-import { useCategories, type CategoryKey } from '../composables/useCategories'
-import { type Expense, type ExpenseFormProps, type ExpenseFormEmits } from '../types'
+import { useCategories } from '../composables/useCategories'
+import CategoryTreeSelector from './CategoryTreeSelector.vue'
+import { type Expense, type ExpenseFormProps, type ExpenseFormEmits, type Category } from '../types'
 
 const props = defineProps<ExpenseFormProps>()
 const emit = defineEmits<ExpenseFormEmits>()
 
 const { supabase } = useSupabase()
-const { CATEGORY_OPTIONS } = useCategories()
+const { 
+  categories, 
+  categoriesLoaded, 
+  loadCategories, 
+  initializeUserCategories 
+} = useCategories()
+
+// Helper function to format date for input (YYYY-MM-DD)
+const formatDateForInput = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toISOString().split('T')[0]
+}
+
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayDate = (): string => {
+  return new Date().toISOString().split('T')[0]
+}
 
 const showForm = ref(props.modelValue)
 const amount = ref('')
-const category = ref<CategoryKey>('Food')
+const category = ref<string>('')
+const date = ref('')
 const note = ref('')
 
-const categoryOptions = CATEGORY_OPTIONS
-
-watch(() => props.modelValue, (newValue) => {
-  showForm.value = newValue
-  if (newValue && props.expense) {
-    // Populate form with existing expense data
-    amount.value = props.expense.amount.toString()
-    category.value = props.expense.category as CategoryKey
+// Initialize form data based on props
+const initializeForm = () => {
+  if (props.expense) {
+    // Expense should now always have camelCase properties after conversion
+    const categoryId = props.expense.categoryId
+    
+    amount.value = props.expense.amount?.toString() || ''
+    category.value = categoryId || ''
+    date.value = formatDateForInput(props.expense.date)
     note.value = props.expense.note || ''
+    
+
+  } else {
+    // New expense - reset to defaults
+    amount.value = ''
+    category.value = ''
+    date.value = getTodayDate()
+    note.value = ''
+    
+
+  }
+}
+
+// Initialize on mount
+initializeForm()
+
+
+
+// Load categories when component mounts
+onMounted(async () => {
+  if (categories.value.length === 0) {
+    const loadedCategories = await loadCategories()
+    // If no categories exist, initialize them for the user
+    if (loadedCategories.length === 0) {
+      await initializeUserCategories()
+    }
+  }
+  
+  // Note: Category is now initialized directly from props.expense.categoryId
+  
+  // Set default date to today for new expenses
+  if (!props.expense && !date.value) {
+    date.value = getTodayDate()
   }
 })
 
-watch(() => props.expense, (newExpense) => {
-  if (newExpense) {
-    amount.value = newExpense.amount.toString()
-    category.value = newExpense.category as CategoryKey
-    note.value = newExpense.note || ''
+// Watch for form visibility changes
+watch(() => props.modelValue, (newValue) => {
+  showForm.value = newValue
+  if (newValue) {
+    // Re-initialize form data when dialog opens
+    initializeForm()
   }
+})
+
+// Watch for expense changes (when editing different expenses)
+watch(() => props.expense, () => {
+  initializeForm()
 })
 
 watch(showForm, (newValue) => {
@@ -122,16 +202,22 @@ const closeForm = () => {
 const resetForm = () => {
   amount.value = ''
   note.value = ''
-  category.value = 'Food'
+  date.value = getTodayDate()
+  // Clear category selection for new expenses
+  category.value = ''
+}
+
+const onCategorySelected = (selectedCategory: Category) => {
+  // Category is already set by v-model, but we can add additional logic here if needed
 }
 
 const handleSave = () => {
-  if (!amount.value) return
+  if (!amount.value || !category.value || !date.value) return
   
   const expenseData = {
     amount: parseFloat(amount.value),
-    category: category.value,
-    date: props.expense ? props.expense.date : new Date().toISOString(),
+    categoryId: category.value,
+    date: date.value + 'T00:00:00.000Z', // Convert YYYY-MM-DD to ISO string
     note: note.value.trim() || undefined
   }
   
@@ -144,5 +230,16 @@ const handleSave = () => {
   }
   
   closeForm()
+}
+
+const handleDelete = () => {
+  if (!props.expense) return
+  
+  // Show confirmation dialog
+  if (confirm('确定要删除这笔支出吗？此操作不可撤销。')) {
+    // Emit delete event with the expense id
+    emit('delete', props.expense.id)
+    closeForm()
+  }
 }
 </script>

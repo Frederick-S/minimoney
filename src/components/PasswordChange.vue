@@ -26,26 +26,6 @@
             required
             class="mb-4"
           />
-
-          <v-alert
-            v-if="error"
-            type="error"
-            class="mb-4"
-            closable
-            @click:close="error = ''"
-          >
-            {{ error }}
-          </v-alert>
-
-          <v-alert
-            v-if="successMessage"
-            type="success"
-            class="mb-4"
-            closable
-            @click:close="successMessage = ''"
-          >
-            {{ successMessage }}
-          </v-alert>
         </v-form>
       </v-card-text>
 
@@ -72,18 +52,18 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
+import { useToast } from '../composables/useToast'
 import { type PasswordChangeProps, type PasswordChangeEmits } from '../types'
 
 const props = defineProps<PasswordChangeProps>()
 const emit = defineEmits<PasswordChangeEmits>()
 
 const { updatePassword } = useSupabase()
+const { showError, showSuccess } = useToast()
 
 const newPassword = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
-const error = ref('')
-const successMessage = ref('')
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -103,8 +83,6 @@ const confirmPasswordRules = [
 const resetForm = () => {
   newPassword.value = ''
   confirmPassword.value = ''
-  error.value = ''
-  successMessage.value = ''
   loading.value = false
 }
 
@@ -115,38 +93,36 @@ const closeDialog = () => {
 
 const handleSubmit = async () => {
   if (!newPassword.value || !confirmPassword.value) {
-    error.value = '请填写所有字段'
+    showError('请填写所有字段')
     return
   }
 
   if (newPassword.value !== confirmPassword.value) {
-    error.value = '两次输入的密码不一致'
+    showError('两次输入的密码不一致')
     return
   }
 
   if (newPassword.value.length < 6) {
-    error.value = '新密码至少6位'
+    showError('新密码至少6位')
     return
   }
 
   loading.value = true
-  error.value = ''
-  successMessage.value = ''
 
   try {
     const { error: updateError } = await updatePassword(newPassword.value)
 
     if (updateError) {
-      error.value = updateError.message
+      showError(updateError.message || '修改密码失败')
     } else {
-      successMessage.value = '密码修改成功！'
-      // Close dialog after 2 seconds
+      showSuccess('密码修改成功！')
+      // Close dialog after success
       setTimeout(() => {
         closeDialog()
-      }, 2000)
+      }, 1500)
     }
   } catch (err) {
-    error.value = '修改密码失败，请重试'
+    showError('修改密码失败，请重试')
   } finally {
     loading.value = false
   }

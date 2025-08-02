@@ -15,8 +15,8 @@
 
       <!-- Summary Stats -->
       <SummaryStats
-        :total="periodSummary?.total_amount || 0"
-        :count="periodSummary?.expense_count || 0"
+        :total="periodSummary?.totalAmount || 0"
+        :count="periodSummary?.expenseCount || 0"
         :period-label="periodLabel"
       />
 
@@ -108,6 +108,8 @@ const loadAggregatedData = async () => {
     categoryBreakdown.value = categoryData
     periodSummary.value = summaryData
     monthlyTrend.value = trendData
+    
+
   } finally {
     loadingExpenses.value = false
   }

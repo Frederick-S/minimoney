@@ -19,12 +19,14 @@
 import { ref, onMounted, watch } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useExpenseManagement } from '../composables/useExpenseManagement'
+import { useToast } from '../composables/useToast'
 import { type ExpenseListProps } from '../types'
 
 const props = defineProps<ExpenseListProps>()
 
 const { user, supabase } = useSupabase()
 const { refreshTrigger } = useExpenseManagement()
+const { showError } = useToast()
 
 const todayTotal = ref(0)
 const loading = ref(true)
@@ -53,6 +55,7 @@ const loadTodayTotal = async () => {
 
     if (error) {
       console.error('RPC call failed:', error)
+      showError('加载今日支出失败')
       todayTotal.value = 0
     } else {
       // RPC returns the sum directly
@@ -60,6 +63,7 @@ const loadTodayTotal = async () => {
     }
   } catch (err) {
     console.error('Error calculating today\'s total:', err)
+    showError('计算今日支出失败')
     todayTotal.value = 0
   } finally {
     loading.value = false
