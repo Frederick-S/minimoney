@@ -2,7 +2,7 @@
   <v-card class="mb-6" elevation="1" v-if="showChart && trendData && trendData.length > 0">
     <v-card-title class="pb-2">
       <v-icon class="mr-2">mdi-chart-line</v-icon>
-      {{ year }}年月度趋势
+      {{ year === '历年趋势' ? year : `${year}年月度趋势` }}
     </v-card-title>
     <v-card-text>
       <div style="position: relative; height: 300px;">
@@ -86,7 +86,7 @@ const createChart = () => {
     data: {
       labels: months,
       datasets: [{
-        label: '月支出',
+        label: props.year === '历年趋势' ? '年支出' : '月支出',
         data: Object.values(data),
         borderColor: '#2196F3',
         backgroundColor: 'rgba(33, 150, 243, 0.1)',

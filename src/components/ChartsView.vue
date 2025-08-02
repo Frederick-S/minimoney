@@ -23,11 +23,11 @@
       <!-- Category Breakdown Chart -->
       <CategoryChart :category-data="categoryBreakdown" />
 
-      <!-- Monthly Trend Chart (only show for year view) -->
+      <!-- Trend Chart (monthly for year view, yearly for all time view) -->
       <TrendChart
         :trend-data="monthlyTrend"
-        :year="selectedYear"
-        :show-chart="selectedPeriodType === 'year'"
+        :year="selectedPeriodType === 'all' ? '历年趋势' : selectedYear"
+        :show-chart="selectedPeriodType === 'year' || selectedPeriodType === 'all'"
       />
 
       <!-- Category Details -->
@@ -61,10 +61,10 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
-const { getCategoryBreakdown, getMonthlyTrend, getPeriodSummary, refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
+const { getCategoryBreakdown, getMonthlyTrend, getYearlyTrend, getPeriodSummary, refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
 
 const loadingExpenses = ref(false)
-const selectedPeriodType = ref<'month' | 'year'>('month')
+const selectedPeriodType = ref<'month' | 'year' | 'all'>('month')
 const selectedMonth = ref('')
 const selectedYear = ref('')
 
@@ -81,12 +81,18 @@ const dateRange = computed(() => {
     const startDate = `${year}-${month}-01`
     const endDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0]
     return { startDate, endDate }
-  } else {
+  } else if (selectedPeriodType.value === 'year') {
     if (!selectedYear.value) return null
     const startDate = `${selectedYear.value}-01-01`
     const endDate = `${selectedYear.value}-12-31`
     return { startDate, endDate }
+  } else if (selectedPeriodType.value === 'all') {
+    // For all time, use a very early start date and current date
+    const startDate = '2020-01-01'  // Reasonable start date for expense tracking
+    const endDate = new Date().toISOString().split('T')[0]  // Today
+    return { startDate, endDate }
   }
+  return null
 })
 
 // Load aggregated data using RPC calls
@@ -102,6 +108,8 @@ const loadAggregatedData = async () => {
       getPeriodSummary(range.startDate, range.endDate),
       selectedPeriodType.value === 'year' && selectedYear.value 
         ? getMonthlyTrend(parseInt(selectedYear.value))
+        : selectedPeriodType.value === 'all'
+        ? getYearlyTrend()
         : Promise.resolve([])
     ])
 
@@ -145,8 +153,11 @@ const periodLabel = computed(() => {
     const [year, month] = selectedMonth.value.split('-')
     const date = new Date(parseInt(year), parseInt(month) - 1)
     return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })
-  } else {
+  } else if (selectedPeriodType.value === 'year') {
     return `${selectedYear.value}年`
+  } else if (selectedPeriodType.value === 'all') {
+    return '全部时间'
   }
+  return ''
 })
 </script>
