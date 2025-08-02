@@ -212,6 +212,9 @@ export function useExpenseManagement() {
     getCategoryBreakdown,
     getMonthlyTrend,
     getPeriodSummary,
-    getPeriodExpenses
+    getPeriodExpenses,
+    // Export conversion utilities
+    convertKeysToCamelCase,
+    convertKeysToSnakeCase
   }
 }

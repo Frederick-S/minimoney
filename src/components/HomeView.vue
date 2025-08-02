@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<HomeViewProps>(), {
 // const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
-const { refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
+const { refreshTrigger: globalRefreshTrigger, convertKeysToCamelCase } = useExpenseManagement()
 const { loadCategories, initializeUserCategories } = useCategories()
 const { openFormForEdit } = useExpenseForm()
 const { showError } = useToast()
@@ -86,11 +86,14 @@ const loadExpenses = async (reset = false) => {
     console.error('Error loading expenses:', error)
     showError('加载支出记录失败')
   } else {
+    // Convert database format (snake_case) to TypeScript interface format (camelCase)
+    const convertedExpenses = convertKeysToCamelCase<Expense[]>(data || [])
+    
     if (reset) {
-      expenses.value = data || []
+      expenses.value = convertedExpenses
       currentPage.value = 1 // Set to 1 since we loaded page 0
     } else {
-      expenses.value = [...expenses.value, ...(data || [])]
+      expenses.value = [...expenses.value, ...convertedExpenses]
       currentPage.value++ // Increment for next load
     }
     

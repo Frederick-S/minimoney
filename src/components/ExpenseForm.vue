@@ -133,8 +133,8 @@ const note = ref('')
 // Initialize form data based on props
 const initializeForm = () => {
   if (props.expense) {
-    // Use category_id (snake_case) from database, not categoryId (camelCase)
-    const categoryId = (props.expense as any).category_id || props.expense.categoryId
+    // Expense should now always have camelCase properties after conversion
+    const categoryId = props.expense.categoryId
     
     amount.value = props.expense.amount?.toString() || ''
     category.value = categoryId || ''
