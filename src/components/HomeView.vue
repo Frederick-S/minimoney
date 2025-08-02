@@ -35,6 +35,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useExpenseManagement } from '../composables/useExpenseManagement'
+import { useCategories } from '../composables/useCategories'
 import { useToast } from '../composables/useToast'
 import TodaySummary from './TodaySummary.vue'
 import ExpenseList from './ExpenseList.vue'
@@ -47,6 +48,7 @@ const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
 const { refreshTrigger: globalRefreshTrigger } = useExpenseManagement()
+const { loadCategories, initializeUserCategories } = useCategories()
 const { showError } = useToast()
 
 const expenses = ref<Expense[]>([])
@@ -118,6 +120,17 @@ const handleEditExpense = (expense: Expense) => {
 // Initialize data
 onMounted(async () => {
   if (user.value) {
+    // Load categories first, then expenses
+    try {
+      const categories = await loadCategories()
+      // If no categories exist, initialize them for the user
+      if (categories.length === 0) {
+        await initializeUserCategories()
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+    
     await loadExpenses(true)
   } else {
     initialLoading.value = false
@@ -127,10 +140,21 @@ onMounted(async () => {
 // Watch for user authentication changes
 watch(user, async (newUser, oldUser) => {
   if (newUser && !oldUser) {
-    // User just logged in, reset pagination and load their expenses
+    // User just logged in, load categories first then expenses
     initialLoading.value = true
     currentPage.value = 0
     hasMoreExpenses.value = true
+    
+    try {
+      const categories = await loadCategories()
+      // If no categories exist, initialize them for the user
+      if (categories.length === 0) {
+        await initializeUserCategories()
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+    
     await loadExpenses(true)
   } else if (!newUser && oldUser) {
     // User just logged out, clear expenses and reset pagination

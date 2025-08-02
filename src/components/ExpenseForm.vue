@@ -140,8 +140,8 @@ onMounted(async () => {
     }
   }
   
-  // Set default category if none selected (use first available category)
-  if (!category.value && categories.value.length > 0) {
+  // For editing existing expenses, ensure a valid category is selected
+  if (props.expense && !category.value && categories.value.length > 0) {
     const firstSelectableCategory = categories.value.find(cat => cat.level > 0) || categories.value[0]
     category.value = firstSelectableCategory.id
   }
@@ -188,11 +188,8 @@ const resetForm = () => {
   amount.value = ''
   note.value = ''
   date.value = getTodayDate()
-  // Reset to first available category
-  if (categories.value.length > 0) {
-    const firstSelectableCategory = categories.value.find(cat => cat.level > 0) || categories.value[0]
-    category.value = firstSelectableCategory.id
-  }
+  // Clear category selection for new expenses
+  category.value = ''
 }
 
 const onCategorySelected = (selectedCategory: Category) => {

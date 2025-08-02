@@ -36,7 +36,32 @@
       </div>
     </v-card>
 
+    <!-- No Category Selected (clickable to expand) -->
+    <v-card 
+      v-if="!modelValue && !isExpanded" 
+      variant="outlined" 
+      class="selected-category-card pa-3 mb-2"
+      @click="toggleExpanded"
+      style="cursor: pointer;"
+    >
+      <div class="d-flex align-center">
+        <v-icon 
+          icon="mdi-tag-outline" 
+          class="mr-3" 
+          color="grey" 
+        />
+        <div class="flex-grow-1">
+          <div class="text-subtitle-2 text-medium-emphasis">请选择分类</div>
+          <div class="text-caption text-medium-emphasis">点击选择支出分类</div>
+        </div>
+        <v-btn icon size="small" variant="text">
+          <v-icon>mdi-chevron-down</v-icon>
+        </v-btn>
+      </div>
+    </v-card>
+
     <!-- Full Category Tree (when expanded) -->
+
     <v-card 
       v-if="isExpanded"
       variant="outlined" 
@@ -46,51 +71,57 @@
         density="compact" 
         class="pa-0" 
         :key="`list-${listKey}`"
-        :opened="openGroups"
-        @update:opened="openGroups = $event"
       >
         <template v-for="parent in hierarchicalCategories" :key="parent.id">
-          <!-- Parent Category Header -->
-          <v-list-group 
-            :value="parent.id"
-            :key="`group-${parent.id}-${openGroupsKey}`"
-            v-if="parent.children && parent.children.length > 0"
-          >
-            <template #activator="{ props: activatorProps }">
-              <v-list-item v-bind="activatorProps" class="parent-category">
-                <template #prepend>
-                  <v-icon :icon="parent.icon" class="mr-2" :color="parent.color" />
-                </template>
-                <v-list-item-title class="font-weight-medium">
-                  {{ parent.displayName }}
-                </v-list-item-title>
-              </v-list-item>
-            </template>
-            
-            <!-- Child Categories -->
-            <v-list-item
-              v-for="child in parent.children"
-              :key="child.id"
-              :value="child.id"
-              :active="modelValue === child.id"
-              @click="selectCategory(child)"
-              class="child-category"
-              :class="{ 'selected-category': modelValue === child.id }"
-              :data-category-id="child.id"
+          <!-- Parent Category with children -->
+          <template v-if="parent.children && parent.children.length > 0">
+            <!-- Parent Category Header (clickable to expand/collapse) -->
+            <v-list-item 
+              @click="toggleGroup(parent.id)"
+              class="parent-category"
+              :style="{ cursor: 'pointer' }"
             >
               <template #prepend>
-                <div class="ml-4">
-                  <v-icon :icon="child.icon" class="mr-2" size="small" :color="child.color" />
-                </div>
+                <v-icon :icon="parent.icon" class="mr-2" :color="parent.color" />
               </template>
-              <v-list-item-title>
-                {{ child.displayName }}
+              <v-list-item-title class="font-weight-medium">
+                {{ parent.displayName }}
               </v-list-item-title>
-              <template #append v-if="modelValue === child.id">
-                <v-icon icon="mdi-check" color="primary" />
+              <template #append>
+                <v-icon>
+                  {{ openGroups.includes(parent.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
+                </v-icon>
+
               </template>
             </v-list-item>
-          </v-list-group>
+            
+            <!-- Child Categories (shown when parent is expanded) -->
+
+            <template v-if="openGroups.includes(parent.id)">
+              <v-list-item
+                v-for="child in parent.children"
+                :key="child.id"
+                :value="child.id"
+                :active="modelValue === child.id"
+                @click="selectCategory(child)"
+                class="child-category"
+                :class="{ 'selected-category': modelValue === child.id }"
+                :data-category-id="child.id"
+              >
+                <template #prepend>
+                  <div class="ml-4">
+                    <v-icon :icon="child.icon" class="mr-2" size="small" :color="child.color" />
+                  </div>
+                </template>
+                <v-list-item-title>
+                  {{ child.displayName }}
+                </v-list-item-title>
+                <template #append v-if="modelValue === child.id">
+                  <v-icon icon="mdi-check" color="primary" />
+                </template>
+              </v-list-item>
+            </template>
+          </template>
           
           <!-- Parent Category without children (selectable) -->
           <v-list-item
@@ -139,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted, defineProps, defineEmits } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted, nextTick, defineProps, defineEmits } from 'vue'
 import { type Category } from '../types'
 
 interface CategoryTreeItem extends Category {
@@ -160,11 +191,24 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// Track which groups are open
+// Track which groups are open (start with none open)
 const openGroups = ref<string[]>([])
 
-// Track if the entire tree is expanded or collapsed
-const isExpanded = ref(true)
+
+
+// Track if the entire tree is expanded or collapsed  
+// Start collapsed for new expenses (no modelValue), expanded if editing (has modelValue)
+const isExpanded = ref(!!props.modelValue)
+
+
+
+// Force all groups to be closed initially
+const forceCloseAllGroups = async () => {
+  openGroups.value = []
+  await nextTick()
+  listKey.value++
+  openGroupsKey.value++
+}
 
 // Reference to the component root element for click-outside detection
 const componentRef = ref<HTMLElement | null>(null)
@@ -220,17 +264,15 @@ const selectCategory = (category: Category) => {
 
 
 
-// Handle individual group open/close
-const updateGroupOpen = (groupId: string, isOpen: boolean) => {
-  if (isOpen) {
-    if (!openGroups.value.includes(groupId)) {
-      openGroups.value.push(groupId)
-    }
+// Toggle a group open/closed
+const toggleGroup = (groupId: string) => {
+  const index = openGroups.value.indexOf(groupId)
+  if (index > -1) {
+    // Group is open, close it
+    openGroups.value.splice(index, 1)
   } else {
-    const index = openGroups.value.indexOf(groupId)
-    if (index > -1) {
-      openGroups.value.splice(index, 1)
-    }
+    // Group is closed, open it
+    openGroups.value.push(groupId)
   }
 }
 
@@ -311,11 +353,20 @@ const selectedCategoryColor = computed(() => {
 // Watch for modelValue changes to manage expansion state
 watch(() => props.modelValue, (newValue) => {
   if (!newValue) {
-    // If no category selected, keep expanded
-    isExpanded.value = true
-    openGroups.value = []
+    // If no category selected (new expense), keep collapsed
+    isExpanded.value = false
+    forceCloseAllGroups()
   }
 }, { immediate: true })
+
+// Watch for categories loading to ensure groups start closed
+watch(() => props.categories, async (newCategories) => {
+  if (newCategories.length > 0 && !props.modelValue) {
+    // When categories load for new expense, ensure all groups are closed
+    await nextTick()
+    await forceCloseAllGroups()
+  }
+}, { immediate: false })
 
 // Click outside handler to close the category tree
 const handleClickOutside = (event: MouseEvent) => {
@@ -328,8 +379,14 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 // Add/remove click outside listener
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside, true)
+  
+  // Ensure all groups start closed
+  await nextTick()
+  if (!props.modelValue) {
+    await forceCloseAllGroups()
+  }
 })
 
 onUnmounted(() => {
