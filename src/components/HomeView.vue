@@ -79,6 +79,7 @@ const loadExpenses = async (reset = false) => {
     .from('expenses')
     .select('*')
     .eq('user_id', user.value.id)
+    .order('date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(pageToLoad * pageSize, (pageToLoad + 1) * pageSize - 1)
 

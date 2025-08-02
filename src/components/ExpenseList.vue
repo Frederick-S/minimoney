@@ -73,8 +73,7 @@ const formatAmount = (amount: number) => {
 }
 
 const sortedExpenses = computed(() => 
-  [...props.expenses].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  ).slice(0, 10) // Show only last 10 expenses
+  // Data is already sorted from database, just limit to 10 items
+  props.expenses.slice(0, 10)
 )
 </script>
