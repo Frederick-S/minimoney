@@ -280,67 +280,58 @@ CREATE OR REPLACE FUNCTION copy_system_categories_to_user(
 RETURNS VOID AS $$
 DECLARE
     system_cat RECORD;
-    parent_mapping RECORD;
     new_category_id UUID;
-    new_parent_id UUID;
     existing_count INTEGER;
 BEGIN
-    -- Check if user already has categories from this system set
+    -- Check if user already has categories
     SELECT COUNT(*) INTO existing_count
-    FROM categories c
-    JOIN system_categories sc ON c.system_category_id = sc.id
-    WHERE c.user_id = user_uuid 
-      AND sc.category_set = p_category_set 
-      AND sc.locale = p_locale;
+    FROM categories 
+    WHERE user_id = user_uuid;
     
-    -- If categories already exist, don't duplicate them
+    -- If user has categories, skip
     IF existing_count > 0 THEN
-        RAISE NOTICE 'User % already has categories from set "%" with locale "%". Skipping duplication.', 
-                     user_uuid, p_category_set, p_locale;
+        RAISE NOTICE 'User % already has % categories. Skipping duplication.', user_uuid, existing_count;
         RETURN;
     END IF;
     
-    -- Create a temporary mapping table for parent relationships
-    CREATE TEMP TABLE IF NOT EXISTS category_mapping (
-        system_id UUID,
-        user_id UUID
-    );
-    
-    -- Clear any existing mappings
-    DELETE FROM category_mapping;
-    
-    -- Copy categories level by level to maintain parent relationships
+    -- Insert parent categories first (level 0)
     FOR system_cat IN 
         SELECT * FROM system_categories 
         WHERE category_set = p_category_set 
         AND locale = p_locale
-        ORDER BY level, sort_order
+        AND level = 0
+        ORDER BY sort_order
     LOOP
-        -- Find the corresponding parent in user categories
-        new_parent_id := NULL;
-        IF system_cat.parent_id IS NOT NULL THEN
-            SELECT user_id INTO new_parent_id 
-            FROM category_mapping 
-            WHERE system_id = system_cat.parent_id;
-        END IF;
-        
-        -- Insert the new category
         INSERT INTO categories (
             user_id, parent_id, system_category_id, name, display_name, 
             color, chart_color, icon, is_default, sort_order
         ) VALUES (
-            user_uuid, new_parent_id, system_cat.id, system_cat.name, system_cat.display_name,
+            user_uuid, NULL, system_cat.id, system_cat.name, system_cat.display_name,
             system_cat.color, system_cat.chart_color, system_cat.icon, TRUE, system_cat.sort_order
-        ) RETURNING id INTO new_category_id;
-        
-        -- Store the mapping for child categories
-        INSERT INTO category_mapping (system_id, user_id) VALUES (system_cat.id, new_category_id);
+        );
     END LOOP;
     
-    -- Clean up
-    DROP TABLE IF EXISTS category_mapping;
+    -- Then insert child categories (level 1)
+    FOR system_cat IN 
+        SELECT sc.*, pc.id as parent_category_id
+        FROM system_categories sc
+        JOIN system_categories parent_sc ON sc.parent_id = parent_sc.id
+        JOIN categories pc ON pc.system_category_id = parent_sc.id AND pc.user_id = user_uuid
+        WHERE sc.category_set = p_category_set 
+        AND sc.locale = p_locale
+        AND sc.level = 1
+        ORDER BY sc.sort_order
+    LOOP
+        INSERT INTO categories (
+            user_id, parent_id, system_category_id, name, display_name, 
+            color, chart_color, icon, is_default, sort_order
+        ) VALUES (
+            user_uuid, system_cat.parent_category_id, system_cat.id, system_cat.name, system_cat.display_name,
+            system_cat.color, system_cat.chart_color, system_cat.icon, TRUE, system_cat.sort_order
+        );
+    END LOOP;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to create user categories from system template
 CREATE OR REPLACE FUNCTION create_categories_for_new_user(
