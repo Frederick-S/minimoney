@@ -82,9 +82,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSupabase } from '@/composables/useSupabase'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const { signIn, signUp } = useSupabase()
+const { showError } = useToast()
 
 const isLogin = ref(true)
 const email = ref('')
@@ -128,7 +130,7 @@ const handleSubmit = async () => {
       : await signUp(email.value, password.value)
 
     if (authError) {
-      // Error is now handled by toast in useSupabase
+      showError(authError.message || '登录失败，请检查邮箱和密码')
     } else if (isLogin.value) {
       // Successful login - redirect to home
       router.push('/')
@@ -137,7 +139,7 @@ const handleSubmit = async () => {
       successMessage.value = '注册成功！请检查邮箱确认注册。'
     }
   } catch (err) {
-    // Error is now handled by toast in useSupabase
+    showError('登录或注册过程中发生错误，请重试')
   } finally {
     loading.value = false
   }
