@@ -22,11 +22,12 @@ import {
   PointElement,
   Title,
   Tooltip,
-  LineController
+  LineController,
+  Filler
 } from 'chart.js'
 import { type MonthlyTrendData } from '../../types'
 
-Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, LineController)
+Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, LineController, Filler)
 
 interface Props {
   trendData?: MonthlyTrendData[]
