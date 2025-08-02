@@ -61,11 +61,11 @@ const monthlyData = computed(() => {
     return { months, data }
   }
   
-  const months = props.trendData.map(item => item.month_label)
+  const months = props.trendData.map(item => item.monthLabel)
   const data: Record<string, number> = {}
   
   props.trendData.forEach(item => {
-    data[item.month_label] = item.amount
+    data[item.monthLabel] = item.amount
   })
   
   return { months, data }
