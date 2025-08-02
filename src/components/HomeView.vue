@@ -7,7 +7,7 @@
     
     <template v-else>
       <TodaySummary :expenses="expenses" />
-      <ExpenseList :expenses="expenses" @edit="openFormForEdit" />
+      <ExpenseList :expenses="expenses" @edit="openFormForEdit" @delete="handleDelete" />
       
       <!-- Load More Button -->
       <div v-if="hasMoreExpenses" class="text-center py-4">
@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<HomeViewProps>(), {
 // const emit = defineEmits<HomeViewEmits>()
 
 const { user, supabase } = useSupabase()
-const { refreshTrigger: globalRefreshTrigger, convertKeysToCamelCase } = useExpenseManagement()
+const { refreshTrigger: globalRefreshTrigger, convertKeysToCamelCase, deleteExpense } = useExpenseManagement()
 const { loadCategories, initializeUserCategories } = useCategories()
 const { openFormForEdit } = useExpenseForm()
 const { showError } = useToast()
@@ -169,6 +169,18 @@ watch(user, async (newUser, oldUser) => {
     initialLoading.value = false
   }
 })
+
+// Handle expense deletion
+const handleDelete = async (expenseId: string) => {
+  try {
+    await deleteExpense(expenseId)
+    // Remove the deleted expense from the local state
+    expenses.value = expenses.value.filter(expense => expense.id !== expenseId)
+  } catch (error) {
+    console.error('Failed to delete expense:', error)
+    showError('删除支出失败')
+  }
+}
 
 // Watch for expense changes (when new expense is added or updated)
 watch([() => props.refreshTrigger, globalRefreshTrigger], async () => {

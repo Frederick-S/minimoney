@@ -51,7 +51,7 @@
                   {{ expense.note }}
                 </div>
               </div>
-              <div class="ml-3">
+              <div class="ml-3 d-flex ga-2">
                 <v-btn
                   icon="mdi-pencil"
                   size="small"
@@ -59,17 +59,89 @@
                   color="primary"
                   @click="emit('edit', expense)"
                 />
+                <v-btn
+                  icon="mdi-delete-outline"
+                  size="small"
+                  variant="text"
+                  color="error"
+                  @click="handleDelete(expense)"
+                />
               </div>
             </div>
           </v-card-text>
         </v-card>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="showDeleteDialog" max-width="400" persistent>
+      <v-card>
+        <v-card-title class="text-h6 font-weight-medium">
+          <v-icon color="error" class="mr-2">mdi-alert-circle-outline</v-icon>
+          确认删除
+        </v-card-title>
+        
+        <v-card-text v-if="expenseToDelete" class="pb-2">
+          <p class="mb-3">确定要删除这笔支出吗？</p>
+          
+          <v-card class="bg-grey-lighten-5 pa-3 mb-3" elevation="0">
+            <div class="d-flex justify-space-between align-center mb-2">
+              <span class="text-body-2 text-medium-emphasis">金额</span>
+              <span class="text-h6 font-weight-medium text-error">
+                {{ formatAmount(expenseToDelete.amount) }}
+              </span>
+            </div>
+            
+            <div class="d-flex justify-space-between align-center mb-2">
+              <span class="text-body-2 text-medium-emphasis">分类</span>
+              <v-chip 
+                :color="getCategoryColor(expenseToDelete.categoryId)"
+                size="small"
+                variant="flat"
+              >
+                {{ getCategoryDisplayName(expenseToDelete.categoryId) }}
+              </v-chip>
+            </div>
+            
+            <div v-if="expenseToDelete.note" class="d-flex justify-space-between align-start">
+              <span class="text-body-2 text-medium-emphasis">备注</span>
+              <span class="text-body-2 text-right flex-shrink-1">
+                {{ expenseToDelete.note }}
+              </span>
+            </div>
+          </v-card>
+          
+          <p class="text-body-2 text-error mb-0">
+            <v-icon size="small" class="mr-1">mdi-information-outline</v-icon>
+            此操作不可撤销
+          </p>
+        </v-card-text>
+
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="cancelDelete"
+            color="primary"
+          >
+            取消
+          </v-btn>
+          <v-btn
+            variant="flat"
+            color="error"
+            @click="confirmDelete"
+            class="ml-2"
+          >
+            删除
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCategories } from '../composables/useCategories'
 import { type Expense, type ExpenseListProps, type ExpenseListEmits } from '../types'
 
@@ -133,4 +205,29 @@ const groupedExpenses = computed(() => {
   // Convert Map to Array and maintain date order (already sorted from database)
   return Array.from(groups.values())
 })
+
+// Delete confirmation dialog state
+const showDeleteDialog = ref(false)
+const expenseToDelete = ref<Expense | null>(null)
+
+// Handle delete button click - show confirmation dialog
+const handleDelete = (expense: Expense) => {
+  expenseToDelete.value = expense
+  showDeleteDialog.value = true
+}
+
+// Confirm deletion
+const confirmDelete = () => {
+  if (expenseToDelete.value) {
+    emit('delete', expenseToDelete.value.id)
+    showDeleteDialog.value = false
+    expenseToDelete.value = null
+  }
+}
+
+// Cancel deletion
+const cancelDelete = () => {
+  showDeleteDialog.value = false
+  expenseToDelete.value = null
+}
 </script>

@@ -64,15 +64,6 @@
       </v-card-text>
 
       <v-card-actions class="pa-6 pt-0">
-        <v-btn 
-          v-if="props.expense"
-          color="error"
-          variant="outlined"
-          @click="handleDelete"
-          class="mr-2"
-        >
-          删除
-        </v-btn>
         <v-spacer />
         <v-btn 
           variant="outlined" 
@@ -232,14 +223,5 @@ const handleSave = () => {
   closeForm()
 }
 
-const handleDelete = () => {
-  if (!props.expense) return
-  
-  // Show confirmation dialog
-  if (confirm('确定要删除这笔支出吗？此操作不可撤销。')) {
-    // Emit delete event with the expense id
-    emit('delete', props.expense.id)
-    closeForm()
-  }
-}
+
 </script>

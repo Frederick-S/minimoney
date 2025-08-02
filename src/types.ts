@@ -48,7 +48,6 @@ export interface ExpenseFormEmits {
   (e: 'update:modelValue', value: boolean): void
   (e: 'save', expense: Omit<Expense, 'id'>): void
   (e: 'update', expense: Expense): void
-  (e: 'delete', expenseId: string): void
 }
 
 /**
@@ -56,6 +55,7 @@ export interface ExpenseFormEmits {
  */
 export interface ExpenseListEmits {
   (e: 'edit', expense: Expense): void
+  (e: 'delete', expenseId: string): void
 }
 
 /**
