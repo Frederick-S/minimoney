@@ -6,10 +6,7 @@
     class="mb-0"
   >
     <v-app-bar-title>
-      <div class="d-flex flex-column">
-        <span class="text-h6">简账</span>
-        <span class="text-caption opacity-75">简单记录每一笔支出</span>
-      </div>
+      <span class="text-h6">简账</span>
     </v-app-bar-title>
 
     <template #append>
