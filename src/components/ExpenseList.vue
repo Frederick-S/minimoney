@@ -179,7 +179,8 @@ const formatDateLabel = (dateString: string): string => {
   } else if (compareDate.getTime() === compareYesterday.getTime()) {
     return '昨天'  
   } else {
-    return date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
+    // Always show year for all other dates
+    return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
   }
 }
 
