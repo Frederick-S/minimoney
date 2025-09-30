@@ -62,6 +62,9 @@ export function useSupabase() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: import.meta.env.VITE_SUPABASE_REDIRECT_URL
+      }
     })
     
     if (data.user && !error) {
