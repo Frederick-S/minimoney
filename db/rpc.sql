@@ -17,6 +17,27 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 1b. Get daily totals for a list of dates
+CREATE OR REPLACE FUNCTION get_daily_totals(
+  p_user_id UUID,
+  p_dates DATE[]
+) RETURNS TABLE(
+  date DATE,
+  total NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    e.date,
+    COALESCE(SUM(e.amount), 0) as total
+  FROM expenses e
+  WHERE e.user_id = p_user_id 
+    AND e.date = ANY(p_dates)
+  GROUP BY e.date
+  ORDER BY e.date DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 2. Get category breakdown for a specific period
 CREATE OR REPLACE FUNCTION get_category_breakdown(
   p_user_id UUID,

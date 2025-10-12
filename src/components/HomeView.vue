@@ -7,7 +7,7 @@
     
     <template v-else>
       <TodaySummary :expenses="expenses" />
-      <ExpenseList :expenses="expenses" @edit="openFormForEdit" @delete="handleDelete" />
+      <ExpenseList :expenses="expenses" :daily-totals="dailyTotals" @edit="openFormForEdit" @delete="handleDelete" />
       
       <!-- Load More Button -->
       <div v-if="hasMoreExpenses" class="text-center py-4">
@@ -55,6 +55,7 @@ const { openFormForEdit } = useExpenseForm()
 const { showError } = useToast()
 
 const expenses = ref<Expense[]>([])
+const dailyTotals = ref<Record<string, number>>({})
 const currentPage = ref(0)
 const pageSize = 5
 const hasMoreExpenses = ref(true)
@@ -109,6 +110,37 @@ const loadExpenses = async (reset = false) => {
   if (reset) {
     initialLoading.value = false
   }
+  
+  // Load daily totals after loading expenses
+  await loadDailyTotals()
+}
+
+// Load daily totals for the dates in the current expense list
+const loadDailyTotals = async () => {
+  if (!user.value || expenses.value.length === 0) return
+
+  // Get unique dates from loaded expenses
+  const uniqueDates = [...new Set(expenses.value.map(e => e.date))]
+  
+  try {
+    const { data, error } = await supabase.rpc('get_daily_totals', {
+      p_user_id: user.value.id,
+      p_dates: uniqueDates
+    })
+
+    if (error) {
+      console.error('Error loading daily totals:', error)
+    } else {
+      // Convert array to map for easy lookup
+      const totalsMap: Record<string, number> = {}
+      data?.forEach((item: any) => {
+        totalsMap[item.date] = item.total
+      })
+      dailyTotals.value = totalsMap
+    }
+  } catch (err) {
+    console.error('Error loading daily totals:', err)
+  }
 }
 
 // Load more expenses
@@ -117,6 +149,7 @@ const loadMoreExpenses = async () => {
   
   loadingMore.value = true
   await loadExpenses()
+  await loadDailyTotals()  // Refresh daily totals after loading more
   loadingMore.value = false
 }
 

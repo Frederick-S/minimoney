@@ -31,6 +31,7 @@ export interface User {
  */
 export interface ExpenseListProps {
   expenses: Expense[]
+  dailyTotals?: Record<string, number>  // Map of date -> total amount
 }
 
 /**

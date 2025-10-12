@@ -17,12 +17,9 @@
           <h3 class="text-subtitle-1 font-weight-medium text-medium-emphasis">
             {{ group.dateLabel }}
           </h3>
-          <div class="d-flex align-center">
-            <span class="text-body-2 text-medium-emphasis mr-3">
-              {{ formatAmount(group.total) }}
-            </span>
-            <v-divider />
-          </div>
+          <span class="text-body-2 text-medium-emphasis">
+            {{ formatAmount(group.total) }}
+          </span>
         </div>
         
         <!-- Expenses for this date -->
@@ -195,12 +192,11 @@ const groupedExpenses = computed(() => {
         date: dateKey,
         dateLabel: formatDateLabel(dateKey),
         expenses: [],
-        total: 0
+        total: props.dailyTotals?.[dateKey] || 0  // Use daily total from prop
       })
     }
     const group = groups.get(dateKey)!
     group.expenses.push(expense)
-    group.total += expense.amount
   })
   
   // Convert Map to Array and maintain date order (already sorted from database)
