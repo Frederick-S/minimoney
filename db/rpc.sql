@@ -72,7 +72,11 @@ BEGIN
     COALESCE(SUM(e.amount), 0) as amount,
     COUNT(*)::BIGINT as count,
     CASE 
-      WHEN total_amount > 0 THEN ROUND((COALESCE(SUM(e.amount), 0) / total_amount * 100), 2)
+      WHEN total_amount > 0 THEN 
+        GREATEST(
+          ROUND((COALESCE(SUM(e.amount), 0) / total_amount * 100), 2),
+          CASE WHEN COALESCE(SUM(e.amount), 0) > 0 THEN 0.01 ELSE 0 END
+        )
       ELSE 0
     END as percentage
   FROM expenses e
@@ -315,7 +319,11 @@ BEGIN
     ct.total_amount as amount,
     ct.total_count as count,
     CASE 
-      WHEN total_amount > 0 THEN ROUND((ct.total_amount / total_amount * 100), 2)
+      WHEN total_amount > 0 THEN 
+        GREATEST(
+          ROUND((ct.total_amount / total_amount * 100), 2),
+          CASE WHEN ct.total_amount > 0 THEN 0.01 ELSE 0 END
+        )
       ELSE 0
     END as percentage,
     ct.has_children

@@ -18,7 +18,7 @@
               class="mr-3"
             >
               <span class="text-white text-caption font-weight-bold">
-                {{ Math.round(categoryItem.percentage) }}%
+                {{ formatPercentage(categoryItem.percentage) }}
               </span>
             </v-avatar>
           </template>
@@ -55,5 +55,14 @@ const formatAmount = (amount: number) => {
     style: 'currency',
     currency: 'CNY'
   }).format(amount)
+}
+
+const formatPercentage = (percentage: number) => {
+  // For percentages >= 1%, show as integer
+  if (percentage >= 1) {
+    return `${Math.round(percentage)}%`
+  }
+  // For percentages < 1%, show 1 decimal place
+  return `${percentage.toFixed(1)}%`
 }
 </script>
