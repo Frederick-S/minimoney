@@ -45,6 +45,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { getTodayDate, getLastDayOfMonth, getCurrentMonth, getCurrentYear } from '../utils/dateUtils'
 import CategoryChart from './charts/CategoryChart.vue'
 import TrendChart from './charts/TrendChart.vue'
 import CategoryDetails from './charts/CategoryDetails.vue'
@@ -79,7 +80,7 @@ const dateRange = computed(() => {
     if (!selectedMonth.value) return null
     const [year, month] = selectedMonth.value.split('-')
     const startDate = `${year}-${month}-01`
-    const endDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0]
+    const endDate = getLastDayOfMonth(parseInt(year), parseInt(month))
     return { startDate, endDate }
   } else if (selectedPeriodType.value === 'year') {
     if (!selectedYear.value) return null
@@ -89,7 +90,7 @@ const dateRange = computed(() => {
   } else if (selectedPeriodType.value === 'all') {
     // For all time, use a very early start date and current date
     const startDate = '2020-01-01'  // Reasonable start date for expense tracking
-    const endDate = new Date().toISOString().split('T')[0]  // Today
+    const endDate = getTodayDate()  // Get today's date in user's local timezone
     return { startDate, endDate }
   }
   return null
@@ -125,9 +126,8 @@ const loadAggregatedData = async () => {
 
 // Initialize period selection
 onMounted(async () => {
-  const now = new Date()
-  selectedMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  selectedYear.value = now.getFullYear().toString()
+  selectedMonth.value = getCurrentMonth()
+  selectedYear.value = getCurrentYear()
 })
 
 // Watch for period changes to reload data

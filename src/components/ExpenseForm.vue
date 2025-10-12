@@ -90,6 +90,7 @@
 import { ref, watch, defineProps, defineEmits, onMounted } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useCategories } from '../composables/useCategories'
+import { getTodayDate, formatDateToLocal } from '../utils/dateUtils'
 import CategoryTreeSelector from './CategoryTreeSelector.vue'
 import { type Expense, type ExpenseFormProps, type ExpenseFormEmits, type Category } from '../types'
 
@@ -106,13 +107,7 @@ const {
 
 // Helper function to format date for input (YYYY-MM-DD)
 const formatDateForInput = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toISOString().split('T')[0]
-}
-
-// Helper function to get today's date in YYYY-MM-DD format
-const getTodayDate = (): string => {
-  return new Date().toISOString().split('T')[0]
+  return formatDateToLocal(dateString)
 }
 
 const showForm = ref(props.modelValue)
@@ -208,7 +203,7 @@ const handleSave = () => {
   const expenseData = {
     amount: parseFloat(amount.value),
     categoryId: category.value,
-    date: date.value + 'T00:00:00.000Z', // Convert YYYY-MM-DD to ISO string
+    date: date.value, // Send as YYYY-MM-DD string (DATE type in database)
     note: note.value.trim() || undefined
   }
   

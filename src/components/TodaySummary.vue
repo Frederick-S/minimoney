@@ -20,6 +20,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import { useExpenseManagement } from '../composables/useExpenseManagement'
 import { useToast } from '../composables/useToast'
+import { getTodayDate } from '../utils/dateUtils'
 import { type ExpenseListProps } from '../types'
 
 const props = defineProps<ExpenseListProps>()
@@ -41,9 +42,8 @@ const loadTodayTotal = async () => {
 
   loading.value = true
   
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  // Get today's date in YYYY-MM-DD format (in user's local timezone)
+  const todayStr = getTodayDate()
 
   try {
     // Use RPC function for SQL SUM aggregation
