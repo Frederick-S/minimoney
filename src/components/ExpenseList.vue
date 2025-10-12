@@ -155,8 +155,8 @@ const formatAmount = (amount: number) => {
 }
 
 const sortedExpenses = computed(() => 
-  // Data is already sorted from database, just limit to 10 items
-  props.expenses.slice(0, 10)
+  // Data is already sorted from database
+  props.expenses
 )
 
 // Format date for display
