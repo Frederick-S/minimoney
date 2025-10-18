@@ -137,13 +137,14 @@
                 <v-icon>mdi-alert</v-icon>
                 需要确认的分类 ({{ unmatchedCategories.length }})
               </h4>
-              <v-list class="mb-4">
-                <v-list-item
+              <div class="mb-4">
+                <v-card
                   v-for="csvCategory in unmatchedCategories"
                   :key="csvCategory"
-                  class="mb-2 bg-warning-lighten-5"
+                  class="mb-3 pa-3 bg-warning-lighten-5"
+                  elevation="1"
                 >
-                  <template #prepend>
+                  <div class="d-flex align-center mb-2">
                     <v-chip
                       color="warning"
                       size="small"
@@ -151,28 +152,22 @@
                     >
                       需确认
                     </v-chip>
-                  </template>
-
-                  <v-list-item-title class="font-weight-medium">
-                    CSV: {{ csvCategory }}
-                  </v-list-item-title>
-
-                  <template #append>
-                    <v-select
-                      v-model="categoryMappings[csvCategory].systemCategoryId"
-                      :items="flatCategories"
-                      item-title="displayName"
-                      item-value="id"
-                      variant="outlined"
-                      density="compact"
-                      style="min-width: 200px"
-                      :hint="`匹配度: ${categoryMappings[csvCategory].confidence}%`"
-                      persistent-hint
-                      placeholder="请选择分类"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
+                    <span class="font-weight-medium">{{ csvCategory }}</span>
+                  </div>
+                  
+                  <v-select
+                    v-model="categoryMappings[csvCategory].systemCategoryId"
+                    :items="flatCategories"
+                    item-title="displayName"
+                    item-value="id"
+                    variant="outlined"
+                    density="compact"
+                    :hint="`匹配度: ${categoryMappings[csvCategory].confidence}%`"
+                    persistent-hint
+                    placeholder="请选择分类"
+                  />
+                </v-card>
+              </div>
             </div>
 
             <!-- Matched categories (collapsible) -->
@@ -186,13 +181,14 @@
                     </h4>
                   </v-expansion-panel-title>
                   <v-expansion-panel-text>
-                    <v-list>
-                      <v-list-item
+                    <div>
+                      <v-card
                         v-for="csvCategory in matchedCategories"
                         :key="csvCategory"
-                        class="mb-2"
+                        class="mb-3 pa-3"
+                        elevation="0"
                       >
-                        <template #prepend>
+                        <div class="d-flex align-center mb-2">
                           <v-chip
                             color="success"
                             size="small"
@@ -200,27 +196,21 @@
                           >
                             已匹配
                           </v-chip>
-                        </template>
-
-                        <v-list-item-title>
-                          CSV: {{ csvCategory }}
-                        </v-list-item-title>
-
-                        <template #append>
-                          <v-select
-                            v-model="categoryMappings[csvCategory].systemCategoryId"
-                            :items="flatCategories"
-                            item-title="displayName"
-                            item-value="id"
-                            variant="outlined"
-                            density="compact"
-                            style="min-width: 200px"
-                            :hint="`匹配度: ${categoryMappings[csvCategory].confidence}%`"
-                            persistent-hint
-                          />
-                        </template>
-                      </v-list-item>
-                    </v-list>
+                          <span class="font-weight-medium">{{ csvCategory }}</span>
+                        </div>
+                        
+                        <v-select
+                          v-model="categoryMappings[csvCategory].systemCategoryId"
+                          :items="flatCategories"
+                          item-title="displayName"
+                          item-value="id"
+                          variant="outlined"
+                          density="compact"
+                          :hint="`匹配度: ${categoryMappings[csvCategory].confidence}%`"
+                          persistent-hint
+                        />
+                      </v-card>
+                    </div>
                   </v-expansion-panel-text>
                 </v-expansion-panel>
               </v-expansion-panels>
