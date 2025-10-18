@@ -27,6 +27,9 @@
         :show-chart="selectedPeriodType === 'year' || selectedPeriodType === 'all'"
       />
 
+      <!-- Category Breakdown Chart (Pie Chart) - Top Level Categories Only -->
+      <CategoryChart :category-data="topLevelCategoryBreakdown" />
+
       <!-- Category Details -->
       <CategoryDetails :category-data="categoryBreakdown" />
 
@@ -43,6 +46,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getTodayDate, getLastDayOfMonth, getCurrentMonth, getCurrentYear } from '../utils/dateUtils'
+import { useCategories } from '../composables/useCategories'
+import CategoryChart from './charts/CategoryChart.vue'
 import TrendChart from './charts/TrendChart.vue'
 import CategoryDetails from './charts/CategoryDetails.vue'
 import PeriodFilter from './charts/PeriodFilter.vue'
@@ -67,6 +72,7 @@ const selectedYear = ref('')
 
 // Aggregated data from RPC calls
 const categoryBreakdown = ref<CategoryBreakdownData[]>([])
+const topLevelCategoryBreakdown = ref<CategoryBreakdownData[]>([])
 const monthlyTrend = ref<MonthlyTrendData[]>([])
 const periodSummary = ref<PeriodSummaryData | null>(null)
 
@@ -113,11 +119,85 @@ const loadAggregatedData = async () => {
     categoryBreakdown.value = categoryData
     periodSummary.value = summaryData
     monthlyTrend.value = trendData
-    
+
+    // Aggregate subcategories into parent categories for pie chart
+    aggregateTopLevelCategories(categoryData)
 
   } finally {
     loadingExpenses.value = false
   }
+}
+
+// Aggregate subcategories into their parent categories
+const aggregateTopLevelCategories = async (categoryData: CategoryBreakdownData[]) => {
+  const { categories } = useCategories()
+  
+  // Wait for categories to load if not already loaded
+  if (categories.value.length === 0) {
+    const { loadCategories } = useCategories()
+    await loadCategories()
+  }
+
+  // Create a map of category totals by parent
+  const parentTotals = new Map<string, {
+    categoryId: string
+    categoryName: string
+    categoryDisplayName: string
+    categoryColor: string
+    amount: number
+    count: number
+  }>()
+
+  categoryData.forEach(item => {
+    // Find the category in our categories list
+    const category = categories.value.find(c => c.id === item.categoryId)
+    if (!category) return
+
+    // If it's a top-level category (no parent), use it directly
+    if (!category.parentId) {
+      if (!parentTotals.has(category.id)) {
+        parentTotals.set(category.id, {
+          categoryId: category.id,
+          categoryName: category.name,
+          categoryDisplayName: category.displayName,
+          categoryColor: category.chartColor,
+          amount: 0,
+          count: 0
+        })
+      }
+      const parent = parentTotals.get(category.id)!
+      parent.amount += item.amount
+      parent.count += item.count
+    } else {
+      // It's a subcategory, add to parent
+      const parentCategory = categories.value.find(c => c.id === category.parentId)
+      if (!parentCategory) return
+
+      if (!parentTotals.has(parentCategory.id)) {
+        parentTotals.set(parentCategory.id, {
+          categoryId: parentCategory.id,
+          categoryName: parentCategory.name,
+          categoryDisplayName: parentCategory.displayName,
+          categoryColor: parentCategory.chartColor,
+          amount: 0,
+          count: 0
+        })
+      }
+      const parent = parentTotals.get(parentCategory.id)!
+      parent.amount += item.amount
+      parent.count += item.count
+    }
+  })
+
+  // Calculate percentages
+  const total = Array.from(parentTotals.values()).reduce((sum, cat) => sum + cat.amount, 0)
+  
+  topLevelCategoryBreakdown.value = Array.from(parentTotals.values())
+    .map(cat => ({
+      ...cat,
+      percentage: total > 0 ? (cat.amount / total) * 100 : 0
+    }))
+    .sort((a, b) => b.amount - a.amount) // Sort by amount descending
 }
 
 // Initialize period selection
