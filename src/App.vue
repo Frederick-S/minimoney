@@ -15,6 +15,7 @@
           @logout="handleLogout" 
           @change-password="showPasswordChange = true"
           @import="showImport = true"
+          @export="showExport = true"
         />
 
         <!-- Main Content Area -->
@@ -63,6 +64,12 @@
           v-model="showImport"
         />
 
+        <!-- Export Expenses Dialog (only show if authenticated) -->
+        <ExportExpenses
+          v-if="user"
+          v-model="showExport"
+        />
+
         <!-- Toast Container for notifications -->
         <ToastContainer />
       </v-container>
@@ -78,6 +85,7 @@ import { useExpenseForm } from './composables/useExpenseForm'
 import { useExpenseManagement } from './composables/useExpenseManagement'
 import AppHeader from './components/AppHeader.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
+import ExportExpenses from './components/ExportExpenses.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
 import ImportExpenses from './components/ImportExpenses.vue'
@@ -91,6 +99,7 @@ const router = useRouter()
 
 const showPasswordChange = ref(false)
 const showImport = ref(false)
+const showExport = ref(false)
 
 // Initialize auth on app load
 onMounted(async () => {

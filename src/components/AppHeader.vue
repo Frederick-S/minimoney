@@ -15,6 +15,11 @@
         @click="$emit('import')"
         title="导入支出"
       />
+      <v-btn
+        icon="mdi-download"
+        @click="$emit('export')"
+        title="导出账单"
+      />
       <v-menu>
         <template #activator="{ props }">
           <v-btn
@@ -56,5 +61,6 @@ defineEmits<{
   logout: []
   changePassword: []
   import: []
+  export: []
 }>()
 </script>
