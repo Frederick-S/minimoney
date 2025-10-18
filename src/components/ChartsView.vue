@@ -20,9 +20,6 @@
         :period-label="periodLabel"
       />
 
-      <!-- Category Breakdown Chart -->
-      <CategoryChart :category-data="categoryBreakdown" />
-
       <!-- Trend Chart (monthly for year view, yearly for all time view) -->
       <TrendChart
         :trend-data="monthlyTrend"
@@ -46,7 +43,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getTodayDate, getLastDayOfMonth, getCurrentMonth, getCurrentYear } from '../utils/dateUtils'
-import CategoryChart from './charts/CategoryChart.vue'
 import TrendChart from './charts/TrendChart.vue'
 import CategoryDetails from './charts/CategoryDetails.vue'
 import PeriodFilter from './charts/PeriodFilter.vue'
