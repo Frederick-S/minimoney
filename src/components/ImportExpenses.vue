@@ -310,7 +310,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { categories, loadCategories } = useCategories()
-const { saveExpense, refreshTrigger } = useExpenseManagement()
+const { batchSaveExpenses, triggerRefresh } = useExpenseManagement()
 const { showSuccess, showError } = useToast()
 
 const showDialog = computed({
@@ -555,13 +555,10 @@ const startImport = async () => {
   importProgress.value = 0
   importedCount.value = 0
 
-  const total = validRows.value.length
   const expensesToImport: Array<Omit<Expense, 'id'>> = []
   
   // Prepare all expenses
-  for (let i = 0; i < validRows.value.length; i++) {
-    const row = validRows.value[i]
-    
+  for (const row of validRows.value) {
     const cat = row[columnMapping.value.category]
     const subcat = row[columnMapping.value.subcategory]
     const csvCat = subcat ? `${cat}-${subcat}` : cat
@@ -579,29 +576,32 @@ const startImport = async () => {
     })
   }
 
-  // Import in batches
-  const batchSize = 10
+  // Import in batches of 100 (Supabase can handle this efficiently)
+  const batchSize = 100
+  const totalBatches = Math.ceil(expensesToImport.length / batchSize)
+  
   for (let i = 0; i < expensesToImport.length; i += batchSize) {
     const batch = expensesToImport.slice(i, i + batchSize)
+    const currentBatch = Math.floor(i / batchSize) + 1
     
-    for (const expense of batch) {
-      try {
-        await saveExpense(expense, true) // Skip refresh for each
-        importedCount.value++
-      } catch (error) {
-        console.error('Import error:', error)
-      }
+    try {
+      // Skip refresh for each batch
+      const result = await batchSaveExpenses(batch, true)
+      importedCount.value += result.success
+      
+      // Update progress
+      importProgress.value = (currentBatch / totalBatches) * 100
+    } catch (error) {
+      console.error('Batch import error:', error)
     }
-    
-    importProgress.value = (Math.min(i + batchSize, expensesToImport.length) / total) * 100
   }
 
   importing.value = false
   importComplete.value = true
   
-  // Trigger single refresh after all imports
+  // Trigger single refresh after all batches are complete
   if (importedCount.value > 0) {
-    refreshTrigger.value++
+    triggerRefresh()
   }
   
   showSuccess(`成功导入 ${importedCount.value} 条记录`)

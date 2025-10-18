@@ -11,11 +11,11 @@ const convertKeysToCamelCase = <T extends Record<string, any>>(obj: any): T => {
   if (obj === null || obj === undefined || typeof obj !== 'object') {
     return obj
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(item => convertKeysToCamelCase(item)) as unknown as T
   }
-  
+
   const result: any = {}
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = toCamelCase(key)
@@ -44,7 +44,7 @@ export function useExpenseManagement() {
     if (!user.value) return
 
     const now = new Date().toISOString()
-    
+
     // Convert camelCase to snake_case for database
     const dbExpense = convertKeysToSnakeCase({
       ...expense,
@@ -71,29 +71,50 @@ export function useExpenseManagement() {
     }
   }
 
-  // Batch save expenses without triggering refresh for each one
-  const batchSaveExpenses = async (expenses: Array<Omit<Expense, 'id'>>) => {
+  // Batch save expenses using Supabase batch insert (without triggering refresh)
+  const batchSaveExpenses = async (expenses: Array<Omit<Expense, 'id'>>, skipRefresh = false) => {
     if (!user.value) return { success: 0, failed: 0 }
+    if (expenses.length === 0) return { success: 0, failed: 0 }
 
-    let successCount = 0
-    let failedCount = 0
+    const now = new Date().toISOString()
 
-    for (const expense of expenses) {
-      try {
-        await saveExpense(expense, true) // Skip refresh for each save
-        successCount++
-      } catch (error) {
-        console.error('Batch save error:', error)
-        failedCount++
+    // Convert all expenses to database format
+    const dbExpenses = expenses.map(expense =>
+      convertKeysToSnakeCase({
+        ...expense,
+        userId: user.value!.id,
+        createdAt: now,
+        updatedAt: now
+      })
+    )
+
+    try {
+      // Batch insert all expenses at once
+      const { data, error } = await supabase
+        .from('expenses')
+        .insert(dbExpenses)
+        .select()
+
+      if (error) {
+        console.error('Batch insert error:', error)
+        return { success: 0, failed: expenses.length }
       }
-    }
 
-    // Trigger refresh once at the end
-    if (successCount > 0) {
-      refreshTrigger.value++
-    }
+      // Only trigger refresh if skipRefresh is false
+      if (!skipRefresh) {
+        refreshTrigger.value++
+      }
 
-    return { success: successCount, failed: failedCount }
+      return { success: data?.length || 0, failed: expenses.length - (data?.length || 0) }
+    } catch (error) {
+      console.error('Batch save error:', error)
+      return { success: 0, failed: expenses.length }
+    }
+  }
+
+  // Trigger manual refresh
+  const triggerRefresh = () => {
+    refreshTrigger.value++
   }
 
   // Update existing expense in Supabase
@@ -263,6 +284,7 @@ export function useExpenseManagement() {
     refreshTrigger,
     saveExpense,
     batchSaveExpenses,
+    triggerRefresh,
     updateExpense,
     deleteExpense,
     loadAllExpenses,
