@@ -66,7 +66,7 @@ export function useSupabase() {
         emailRedirectTo: import.meta.env.VITE_SUPABASE_REDIRECT_URL
       }
     })
-    
+
     if (data.user && !error) {
       // Initialize user categories after successful signup
       try {
@@ -76,7 +76,7 @@ export function useSupabase() {
         // Don't show error to user as signup was successful, just log it
       }
     }
-    
+
     return { data, error }
   }
 
@@ -85,7 +85,7 @@ export function useSupabase() {
       email,
       password,
     })
-    
+
     return { data, error }
   }
 
@@ -94,7 +94,7 @@ export function useSupabase() {
     // Clear user state immediately on sign out
     user.value = null
     session.value = null
-    
+
     return { error }
   }
 
@@ -102,19 +102,27 @@ export function useSupabase() {
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword
     })
-    
+
+    return { data, error }
+  }
+
+  const resetPasswordForEmail = async (email: string) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/#/reset-password`
+    })
+
     return { data, error }
   }
 
   const initAuth = async () => {
     if (initialized.value) return
-    
+
     loading.value = true
-    
+
     try {
       // Get initial session from localStorage/storage
       const { data: { session: initialSession }, error } = await supabase.auth.getSession()
-      
+
       if (error) {
         console.error('Error getting session:', error)
         // Clear any corrupted session data
@@ -124,18 +132,18 @@ export function useSupabase() {
       } else {
         session.value = initialSession
         user.value = initialSession?.user ?? null
-        
+
         // If user is already signed in, ensure they have categories
         if (initialSession?.user?.id) {
           ensureUserHasCategories(initialSession.user.id)
         }
       }
-      
+
       // Listen for auth changes (login, logout, token refresh)
       supabase.auth.onAuthStateChange(async (event, newSession) => {
         session.value = newSession
         user.value = newSession?.user ?? null
-        
+
         // Handle token expiration
         if (event === 'TOKEN_REFRESHED') {
           // Token refreshed successfully
@@ -148,10 +156,10 @@ export function useSupabase() {
             ensureUserHasCategories(newSession.user.id)
           }
         }
-        
+
         loading.value = false
       })
-      
+
     } catch (error) {
       console.error('Auth initialization error:', error)
       session.value = null
@@ -171,6 +179,7 @@ export function useSupabase() {
     signIn,
     signOut,
     updatePassword,
+    resetPasswordForEmail,
     initAuth,
   }
 }

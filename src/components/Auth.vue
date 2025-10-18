@@ -5,10 +5,47 @@
         <div class="mx-auto" style="max-width: 400px; width: 100%;">
           <v-card class="pa-6" elevation="2">
             <v-card-title class="text-center pb-4">
-              <h2 class="text-h4 font-weight-light">{{ isLogin ? '登录' : '注册' }}</h2>
+              <h2 class="text-h4 font-weight-light">
+                {{ isForgotPassword ? '重置密码' : (isLogin ? '登录' : '注册') }}
+              </h2>
             </v-card-title>
 
-            <v-form @submit.prevent="handleSubmit">
+            <!-- Forgot Password Form -->
+            <v-form v-if="isForgotPassword" @submit.prevent="handleForgotPassword">
+              <v-text-field
+                v-model="email"
+                label="邮箱"
+                type="email"
+                variant="outlined"
+                :rules="emailRules"
+                required
+                class="mb-3"
+              />
+
+              <v-btn
+                type="submit"
+                color="primary"
+                size="large"
+                block
+                :loading="loading"
+                class="mb-4"
+              >
+                发送重置邮件
+              </v-btn>
+
+              <div class="text-center">
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  @click="backToLogin"
+                >
+                  返回登录
+                </v-btn>
+              </div>
+            </v-form>
+
+            <!-- Login/Signup Form -->
+            <v-form v-else @submit.prevent="handleSubmit">
               <v-text-field
                 v-model="email"
                 label="邮箱"
@@ -39,6 +76,18 @@
                 required
                 class="mb-4"
               />
+
+              <!-- Forgot Password Link -->
+              <div v-if="isLogin" class="text-right mb-3">
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  @click="showForgotPassword"
+                >
+                  忘记密码？
+                </v-btn>
+              </div>
 
               <v-btn
                 type="submit"
@@ -86,10 +135,11 @@ import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
-const { signIn, signUp, supabase } = useSupabase()
+const { signIn, signUp, supabase, resetPasswordForEmail } = useSupabase()
 const { showError, showSuccess } = useToast()
 
 const isLogin = ref(true)
+const isForgotPassword = ref(false)
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
@@ -113,8 +163,45 @@ const confirmPasswordRules = [
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value
+  isForgotPassword.value = false
   successMessage.value = ''
   confirmPassword.value = ''
+}
+
+const showForgotPassword = () => {
+  isForgotPassword.value = true
+  isLogin.value = true
+  successMessage.value = ''
+}
+
+const backToLogin = () => {
+  isForgotPassword.value = false
+  successMessage.value = ''
+}
+
+const handleForgotPassword = async () => {
+  if (!email.value) {
+    showError('请输入邮箱地址')
+    return
+  }
+
+  loading.value = true
+  successMessage.value = ''
+
+  try {
+    const { error } = await resetPasswordForEmail(email.value)
+
+    if (error) {
+      showError(error.message || '发送重置邮件失败')
+    } else {
+      successMessage.value = '密码重置邮件已发送！请检查您的邮箱。'
+      showSuccess('密码重置邮件已发送')
+    }
+  } catch (err) {
+    showError('发送重置邮件时发生错误，请重试')
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleSubmit = async () => {

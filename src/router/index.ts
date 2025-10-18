@@ -3,6 +3,7 @@ import { useSupabase } from '../composables/useSupabase'
 import HomeView from '../components/HomeView.vue'
 import ChartsView from '../components/ChartsView.vue'
 import Auth from '../components/Auth.vue'
+import ResetPassword from '../components/ResetPassword.vue'
 
 const routes = [
   {
@@ -13,6 +14,11 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Auth
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword
   },
   {
     path: '/home',
@@ -42,8 +48,13 @@ const router = createRouter({
 })
 
 // Route guard for authentication
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const { user, loading, initAuth } = useSupabase()
+  
+  // Allow access to reset password page without auth check (session comes from URL)
+  if (to.path === '/reset-password') {
+    return next()
+  }
   
   // Initialize auth if not already done
   if (loading.value) {
