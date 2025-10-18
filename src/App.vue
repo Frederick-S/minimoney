@@ -13,7 +13,8 @@
           v-if="user && $route.name !== 'Login'" 
           :user="user" 
           @logout="handleLogout" 
-          @change-password="showPasswordChange = true" 
+          @change-password="showPasswordChange = true"
+          @import="showImport = true"
         />
 
         <!-- Main Content Area -->
@@ -56,6 +57,12 @@
           v-model="showPasswordChange" 
         />
 
+        <!-- Import Expenses Dialog (only show if authenticated) -->
+        <ImportExpenses
+          v-if="user"
+          v-model="showImport"
+        />
+
         <!-- Toast Container for notifications -->
         <ToastContainer />
       </v-container>
@@ -73,6 +80,7 @@ import AppHeader from './components/AppHeader.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
+import ImportExpenses from './components/ImportExpenses.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { type Expense } from './types'
 
@@ -82,6 +90,7 @@ const { showForm, editingExpense, openFormForNew, openFormForEdit } = useExpense
 const router = useRouter()
 
 const showPasswordChange = ref(false)
+const showImport = ref(false)
 
 // Initialize auth on app load
 onMounted(async () => {

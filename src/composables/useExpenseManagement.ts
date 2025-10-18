@@ -40,7 +40,7 @@ export function useExpenseManagement() {
   const { user, supabase } = useSupabase()
 
   // Save expense to Supabase
-  const saveExpense = async (expense: Omit<Expense, 'id'>) => {
+  const saveExpense = async (expense: Omit<Expense, 'id'>, skipRefresh = false) => {
     if (!user.value) return
 
     const now = new Date().toISOString()
@@ -63,10 +63,37 @@ export function useExpenseManagement() {
       console.error('Error saving expense:', error)
       throw new Error('保存支出失败，请重试')
     } else {
-      // Trigger refresh in components
-      refreshTrigger.value++
+      // Trigger refresh in components (unless skipRefresh is true)
+      if (!skipRefresh) {
+        refreshTrigger.value++
+      }
       return convertKeysToCamelCase<Expense>(data)
     }
+  }
+
+  // Batch save expenses without triggering refresh for each one
+  const batchSaveExpenses = async (expenses: Array<Omit<Expense, 'id'>>) => {
+    if (!user.value) return { success: 0, failed: 0 }
+
+    let successCount = 0
+    let failedCount = 0
+
+    for (const expense of expenses) {
+      try {
+        await saveExpense(expense, true) // Skip refresh for each save
+        successCount++
+      } catch (error) {
+        console.error('Batch save error:', error)
+        failedCount++
+      }
+    }
+
+    // Trigger refresh once at the end
+    if (successCount > 0) {
+      refreshTrigger.value++
+    }
+
+    return { success: successCount, failed: failedCount }
   }
 
   // Update existing expense in Supabase
@@ -235,6 +262,7 @@ export function useExpenseManagement() {
   return {
     refreshTrigger,
     saveExpense,
+    batchSaveExpenses,
     updateExpense,
     deleteExpense,
     loadAllExpenses,

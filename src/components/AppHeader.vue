@@ -10,6 +10,11 @@
     </v-app-bar-title>
 
     <template #append>
+      <v-btn
+        icon="mdi-upload"
+        @click="$emit('import')"
+        title="导入支出"
+      />
       <v-menu>
         <template #activator="{ props }">
           <v-btn
@@ -50,5 +55,6 @@ defineProps<{
 defineEmits<{
   logout: []
   changePassword: []
+  import: []
 }>()
 </script>
