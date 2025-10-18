@@ -77,18 +77,6 @@
                 class="mb-4"
               />
 
-              <!-- Forgot Password Link -->
-              <div v-if="isLogin" class="text-right mb-3">
-                <v-btn
-                  variant="text"
-                  color="primary"
-                  size="small"
-                  @click="showForgotPassword"
-                >
-                  忘记密码？
-                </v-btn>
-              </div>
-
               <v-btn
                 type="submit"
                 color="primary"
@@ -107,6 +95,17 @@
                   @click="toggleMode"
                 >
                   {{ isLogin ? '没有账户？注册' : '已有账户？登录' }}
+                </v-btn>
+              </div>
+
+              <!-- Forgot Password Link (below toggle button) -->
+              <div v-if="isLogin" class="text-center mt-2">
+                <v-btn
+                  variant="text"
+                  color="primary"
+                  @click="showForgotPassword"
+                >
+                  忘记密码？
                 </v-btn>
               </div>
             </v-form>
