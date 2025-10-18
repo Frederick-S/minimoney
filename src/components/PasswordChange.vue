@@ -8,6 +8,16 @@
       <v-card-text class="pa-4">
         <v-form @submit.prevent="handleSubmit">
           <v-text-field
+            v-model="currentPassword"
+            label="当前密码"
+            type="password"
+            variant="outlined"
+            :rules="currentPasswordRules"
+            required
+            class="mb-3"
+          />
+
+          <v-text-field
             v-model="newPassword"
             label="新密码"
             type="password"
@@ -58,9 +68,10 @@ import { type PasswordChangeProps, type PasswordChangeEmits } from '../types'
 const props = defineProps<PasswordChangeProps>()
 const emit = defineEmits<PasswordChangeEmits>()
 
-const { updatePassword } = useSupabase()
+const { updatePassword, supabase, user } = useSupabase()
 const { showError, showSuccess } = useToast()
 
+const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
@@ -69,6 +80,10 @@ const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
+
+const currentPasswordRules = [
+  (v: string) => !!v || '当前密码是必填项',
+]
 
 const newPasswordRules = [
   (v: string) => !!v || '新密码是必填项',
@@ -81,6 +96,7 @@ const confirmPasswordRules = [
 ]
 
 const resetForm = () => {
+  currentPassword.value = ''
   newPassword.value = ''
   confirmPassword.value = ''
   loading.value = false
@@ -92,7 +108,7 @@ const closeDialog = () => {
 }
 
 const handleSubmit = async () => {
-  if (!newPassword.value || !confirmPassword.value) {
+  if (!currentPassword.value || !newPassword.value || !confirmPassword.value) {
     showError('请填写所有字段')
     return
   }
@@ -110,6 +126,19 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
+    // First verify current password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.value?.email || '',
+      password: currentPassword.value
+    })
+
+    if (signInError) {
+      showError('当前密码不正确')
+      loading.value = false
+      return
+    }
+
+    // If current password is correct, update to new password
     const { error: updateError } = await updatePassword(newPassword.value)
 
     if (updateError) {
