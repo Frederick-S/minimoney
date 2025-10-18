@@ -1,5 +1,9 @@
 <template>
-  <v-dialog v-model="isOpen" max-width="400">
+  <v-dialog 
+    v-model="isOpen" 
+    max-width="400"
+    :fullscreen="$vuetify.display.mobile"
+  >
     <v-card>
       <v-card-title class="text-h6 pa-4">
         修改密码

@@ -1,5 +1,11 @@
 <template>
-  <v-dialog v-model="showDialog" max-width="800" persistent scrollable>
+  <v-dialog 
+    v-model="showDialog" 
+    max-width="800" 
+    persistent 
+    scrollable
+    :fullscreen="$vuetify.display.mobile"
+  >
     <v-card>
       <v-toolbar color="primary" dark>
         <v-toolbar-title>导入支出记录</v-toolbar-title>
@@ -119,14 +125,9 @@
           <div v-else>
             <!-- Summary -->
             <v-alert type="info" class="mb-4">
-              <div class="d-flex align-center">
-                <v-icon class="mr-2">mdi-information</v-icon>
-                <div>
-                  <div class="font-weight-bold">
-                    {{ unmatchedCategories.length }} 个分类需要确认，
-                    {{ matchedCategories.length }} 个已自动匹配
-                  </div>
-                </div>
+              <div class="font-weight-bold">
+                {{ unmatchedCategories.length }} 个分类需要确认，
+                {{ matchedCategories.length }} 个已自动匹配
               </div>
             </v-alert>
 
