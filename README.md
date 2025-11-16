@@ -7,7 +7,7 @@ A minimalist expense tracker designed for personal use—no ads, no social featu
 ### Prerequisites
 
 1. **Supabase Account** - Sign up at [supabase.com](https://supabase.com)
-2. **Node.js** - Version 18+ recommended
+2. **Node.js** - Version 20+ recommended
 
 ### Setup
 1. **Create Database Schema**
