@@ -60,11 +60,14 @@ export function useSupabase() {
   }
 
   const signUp = async (email: string, password: string) => {
+    // Use current origin for redirect, fallback to env variable
+    const redirectUrl = import.meta.env.VITE_SUPABASE_REDIRECT_URL || window.location.origin
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: import.meta.env.VITE_SUPABASE_REDIRECT_URL
+        emailRedirectTo: redirectUrl
       }
     })
 
@@ -108,8 +111,12 @@ export function useSupabase() {
   }
 
   const resetPasswordForEmail = async (email: string) => {
+    // Use current origin for redirect, fallback to env variable
+    const baseUrl = import.meta.env.VITE_SUPABASE_REDIRECT_URL || window.location.origin
+    const redirectUrl = baseUrl.endsWith('/') ? `${baseUrl}#/reset-password` : `${baseUrl}/#/reset-password`
+    
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/#/reset-password`
+      redirectTo: redirectUrl
     })
 
     return { data, error }
