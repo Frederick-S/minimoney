@@ -92,7 +92,7 @@ import ImportExpenses from './components/ImportExpenses.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { type Expense } from './types'
 
-const { user, loading, signOut, initAuth } = useSupabase()
+const { user, loading, signOut, initAuth, supabase } = useSupabase()
 const { refreshTrigger } = useExpenseManagement()
 const { showForm, editingExpense, openFormForNew, openFormForEdit } = useExpenseForm()
 const router = useRouter()
@@ -104,6 +104,13 @@ const showExport = ref(false)
 // Initialize auth on app load
 onMounted(async () => {
   await initAuth()
+
+  // Listen for password recovery event
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      router.push('/reset-password')
+    }
+  })
 })
 
 const handleLogout = async () => {

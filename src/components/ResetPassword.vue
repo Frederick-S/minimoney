@@ -96,6 +96,16 @@ const sessionError = ref('')
 // Check if user has valid session from reset link
 onMounted(async () => {
   try {
+    // First check if we already have a session (e.g. handled by Supabase client or redirected from App.vue)
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (session) {
+      console.log('Session already established:', session.user?.email)
+      checkingSession.value = false
+      return
+    }
+
+    // Fallback: Try to parse tokens from URL if session not yet established
     // The hash contains both the route and the auth tokens
     // Format: #/reset-password#access_token=...&refresh_token=...
     const fullHash = window.location.hash
@@ -103,27 +113,18 @@ onMounted(async () => {
     
     // Extract the auth params after the second #
     const hashParts = fullHash.split('#')
-    const authHash = hashParts.length > 2 ? hashParts[2] : hashParts[1]
+    // If we have multiple parts, the last one is likely the auth hash
+    const authHash = hashParts.length > 1 ? hashParts[hashParts.length - 1] : ''
     
     console.log('Auth hash:', authHash)
     
-    const hashParams = new URLSearchParams(authHash)
-    const hasAccessToken = hashParams.has('access_token')
-    const tokenType = hashParams.get('type')
-    
-    console.log('Hash params:', {
-      hasAccessToken,
-      tokenType,
-      accessToken: hashParams.get('access_token')?.substring(0, 20) + '...'
-    })
-    
-    if (!hasAccessToken) {
-      sessionError.value = '重置链接无效。请从邮件中点击完整的重置链接。'
-      checkingSession.value = false
-      return
+    if (!authHash) {
+       sessionError.value = '无法检测到有效的会话或重置令牌。'
+       checkingSession.value = false
+       return
     }
     
-    // Manually set the session using the tokens from URL
+    const hashParams = new URLSearchParams(authHash)
     const accessToken = hashParams.get('access_token')
     const refreshToken = hashParams.get('refresh_token')
     
@@ -144,6 +145,7 @@ onMounted(async () => {
         console.log('Session established successfully:', data.session.user?.email)
       }
     } else {
+      // Only show error if we really don't have a session and no tokens
       sessionError.value = '重置链接缺少必要的令牌。'
     }
   } catch (err) {

@@ -113,7 +113,9 @@ export function useSupabase() {
   const resetPasswordForEmail = async (email: string) => {
     // Use current origin for redirect, fallback to env variable
     const baseUrl = import.meta.env.VITE_SUPABASE_REDIRECT_URL || window.location.origin
-    const redirectUrl = baseUrl.endsWith('/') ? `${baseUrl}#/reset-password` : `${baseUrl}/#/reset-password`
+    // Note: We don't append #/reset-password here because Supabase redirect validation often fails with hash fragments.
+    // Instead, we rely on the onAuthStateChange event listener in App.vue to detect PASSWORD_RECOVERY and redirect.
+    const redirectUrl = baseUrl
     
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl

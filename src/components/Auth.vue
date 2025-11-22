@@ -236,6 +236,11 @@ const handleSubmit = async () => {
 onMounted(async () => {
   // Check if this is an email confirmation redirect
   const fullPath = route.fullPath
+  // Ignore password recovery flows (handled by App.vue)
+  if (fullPath.includes('type=recovery')) {
+    return
+  }
+
   if (fullPath.includes('access_token=') || fullPath.includes('refresh_token=')) {
     loading.value = true
     try {
