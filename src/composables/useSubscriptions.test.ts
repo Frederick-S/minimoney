@@ -314,6 +314,174 @@ describe('useSubscriptions', () => {
     })
 
     /**
+     * Feature: subscription-management, Property 5: Subscription update persistence
+     * Validates: Requirements 2.1, 2.4
+     * 
+     * For any existing subscription and any valid modifications to its fields,
+     * updating the subscription should result in the changes being persisted to the
+     * database and reflected in the subscription list
+     */
+    it('Property 5: Subscription update persistence', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate an existing subscription (with id)
+          fc.record({
+            id: fc.uuid(),
+            userId: fc.constant('test-user-id'),
+            name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+            amount: fc.double({ min: 0.01, max: 100000, noNaN: true }),
+            currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+            billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
+            isAutoRenew: fc.boolean(),
+            endDate: fc.option(
+              fc.integer({ min: 1, max: 365 })
+                .map(days => {
+                  const date = new Date()
+                  date.setDate(date.getDate() + days)
+                  return date.toISOString().split('T')[0]
+                })
+            ),
+            nextBillingDate: fc.integer({ min: 1, max: 365 })
+              .map(days => {
+                const date = new Date()
+                date.setDate(date.getDate() + days)
+                return date.toISOString().split('T')[0]
+              }),
+            createdAt: fc.constant(new Date().toISOString()),
+            updatedAt: fc.constant(new Date().toISOString())
+          }).chain(sub => {
+            // Ensure valid auto-renew/end date relationship
+            if (sub.isAutoRenew) {
+              return fc.constant({ ...sub, endDate: undefined })
+            } else if (!sub.endDate) {
+              return fc.constant({
+                ...sub,
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              })
+            }
+            return fc.constant(sub)
+          }),
+          // Generate modifications to apply
+          fc.record({
+            name: fc.option(fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0)),
+            amount: fc.option(fc.double({ min: 0.01, max: 100000, noNaN: true })),
+            currency: fc.option(fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD')),
+            billingFrequency: fc.option(fc.constantFrom('monthly' as const, 'yearly' as const)),
+            isAutoRenew: fc.option(fc.boolean()),
+            endDate: fc.option(
+              fc.integer({ min: 1, max: 365 })
+                .map(days => {
+                  const date = new Date()
+                  date.setDate(date.getDate() + days)
+                  return date.toISOString().split('T')[0]
+                })
+            ),
+            nextBillingDate: fc.option(
+              fc.integer({ min: 1, max: 365 })
+                .map(days => {
+                  const date = new Date()
+                  date.setDate(date.getDate() + days)
+                  return date.toISOString().split('T')[0]
+                })
+            )
+          }).filter(mods => {
+            // Ensure at least one field is being modified
+            return Object.values(mods).some(v => v !== null && v !== undefined)
+          }),
+          async (originalSubscription, modifications) => {
+            // Apply modifications to create updated subscription
+            const updatedSubscription: any = { ...originalSubscription }
+            
+            if (modifications.name !== null && modifications.name !== undefined) {
+              updatedSubscription.name = modifications.name
+            }
+            if (modifications.amount !== null && modifications.amount !== undefined) {
+              updatedSubscription.amount = modifications.amount
+            }
+            if (modifications.currency !== null && modifications.currency !== undefined) {
+              updatedSubscription.currency = modifications.currency
+            }
+            if (modifications.billingFrequency !== null && modifications.billingFrequency !== undefined) {
+              updatedSubscription.billingFrequency = modifications.billingFrequency
+            }
+            if (modifications.nextBillingDate !== null && modifications.nextBillingDate !== undefined) {
+              updatedSubscription.nextBillingDate = modifications.nextBillingDate
+            }
+            
+            // Handle isAutoRenew and endDate modifications together to maintain valid relationship
+            if (modifications.isAutoRenew !== null && modifications.isAutoRenew !== undefined) {
+              updatedSubscription.isAutoRenew = modifications.isAutoRenew
+              if (modifications.isAutoRenew) {
+                // If changing to auto-renew, clear end date
+                updatedSubscription.endDate = undefined
+              } else if (!updatedSubscription.endDate) {
+                // If changing to non-auto-renew and no end date, add one
+                updatedSubscription.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              }
+            } else if (modifications.endDate !== null && modifications.endDate !== undefined) {
+              // If only endDate is modified, ensure isAutoRenew is false
+              updatedSubscription.endDate = modifications.endDate
+              updatedSubscription.isAutoRenew = false
+            }
+
+            const { updateSubscription, subscriptions } = useSubscriptions()
+
+            // Set up initial state with the original subscription
+            subscriptions.value = [originalSubscription]
+
+            // Mock the database response with the updated subscription
+            const mockUpdatedAt = new Date().toISOString()
+            mockSupabase.single.mockReset()
+            mockSupabase.single.mockResolvedValue({
+              data: {
+                id: updatedSubscription.id,
+                user_id: updatedSubscription.userId,
+                name: updatedSubscription.name,
+                amount: updatedSubscription.amount,
+                currency: updatedSubscription.currency,
+                billing_frequency: updatedSubscription.billingFrequency,
+                is_auto_renew: updatedSubscription.isAutoRenew,
+                end_date: updatedSubscription.endDate || null,
+                next_billing_date: updatedSubscription.nextBillingDate,
+                created_at: updatedSubscription.createdAt,
+                updated_at: mockUpdatedAt
+              },
+              error: null
+            })
+
+            // Update the subscription
+            const result = await updateSubscription(updatedSubscription)
+
+            // Verify the subscription was updated with correct data
+            expect(result).toBeDefined()
+            expect(result.id).toBe(updatedSubscription.id)
+            expect(result.name).toBe(updatedSubscription.name)
+            expect(result.amount).toBe(updatedSubscription.amount)
+            expect(result.currency).toBe(updatedSubscription.currency)
+            expect(result.billingFrequency).toBe(updatedSubscription.billingFrequency)
+            expect(result.isAutoRenew).toBe(updatedSubscription.isAutoRenew)
+            expect(result.endDate).toBe(updatedSubscription.endDate)
+            expect(result.nextBillingDate).toBe(updatedSubscription.nextBillingDate)
+            expect(result.updatedAt).toBeDefined()
+
+            // Verify the subscription is updated in the subscription list
+            expect(subscriptions.value).toHaveLength(1)
+            expect(subscriptions.value[0]).toEqual(result)
+
+            // Verify the database update was called
+            expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+            expect(mockSupabase.update).toHaveBeenCalled()
+            expect(mockSupabase.eq).toHaveBeenCalledWith('id', updatedSubscription.id)
+            expect(mockSupabase.select).toHaveBeenCalled()
+
+            return true
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    /**
      * Feature: subscription-management, Property 4: End date and auto-renew relationship
      * Validates: Requirements 1.5
      * 

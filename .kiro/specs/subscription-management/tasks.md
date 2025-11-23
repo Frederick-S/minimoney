@@ -54,7 +54,7 @@
   - **Property 4: End date and auto-renew relationship**
   - **Validates: Requirements 1.5**
 
-- [ ] 3.6 Write property test for subscription update persistence
+- [x] 3.6 Write property test for subscription update persistence
   - **Property 5: Subscription update persistence**
   - **Validates: Requirements 2.1, 2.4**
 
