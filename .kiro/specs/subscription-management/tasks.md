@@ -70,7 +70,7 @@
   - **Property 8: Currency change recalculation**
   - **Validates: Requirements 2.5**
 
-- [ ] 3.10 Write property test for subscription deletion
+- [x] 3.10 Write property test for subscription deletion
   - **Property 9: Subscription deletion**
   - **Validates: Requirements 3.1, 3.3**
 

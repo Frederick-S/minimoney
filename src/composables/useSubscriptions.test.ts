@@ -812,6 +812,143 @@ describe('useSubscriptions', () => {
     })
 
     /**
+     * Feature: subscription-management, Property 9: Subscription deletion
+     * Validates: Requirements 3.1, 3.3
+     * 
+     * For any subscription, after deletion is confirmed, the subscription should no longer
+     * exist in the database or the displayed subscription list
+     */
+    it('Property 9: Subscription deletion', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate an existing subscription to delete
+          fc.record({
+            id: fc.uuid(),
+            userId: fc.constant('test-user-id'),
+            name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+            amount: fc.double({ min: 0.01, max: 100000, noNaN: true }),
+            currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+            billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
+            isAutoRenew: fc.boolean(),
+            endDate: fc.option(
+              fc.integer({ min: 1, max: 365 })
+                .map(days => {
+                  const date = new Date()
+                  date.setDate(date.getDate() + days)
+                  return date.toISOString().split('T')[0]
+                })
+            ),
+            nextBillingDate: fc.integer({ min: 1, max: 365 })
+              .map(days => {
+                const date = new Date()
+                date.setDate(date.getDate() + days)
+                return date.toISOString().split('T')[0]
+              }),
+            createdAt: fc.constant(new Date().toISOString()),
+            updatedAt: fc.constant(new Date().toISOString())
+          }).chain(sub => {
+            // Ensure valid auto-renew/end date relationship
+            if (sub.isAutoRenew) {
+              return fc.constant({ ...sub, endDate: undefined })
+            } else if (!sub.endDate) {
+              return fc.constant({
+                ...sub,
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              })
+            }
+            return fc.constant(sub)
+          }),
+          // Generate additional subscriptions to ensure we're only deleting the target
+          fc.array(
+            fc.record({
+              id: fc.uuid(),
+              userId: fc.constant('test-user-id'),
+              name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+              amount: fc.double({ min: 0.01, max: 100000, noNaN: true }),
+              currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+              billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
+              isAutoRenew: fc.boolean(),
+              endDate: fc.option(
+                fc.integer({ min: 1, max: 365 })
+                  .map(days => {
+                    const date = new Date()
+                    date.setDate(date.getDate() + days)
+                    return date.toISOString().split('T')[0]
+                  })
+              ),
+              nextBillingDate: fc.integer({ min: 1, max: 365 })
+                .map(days => {
+                  const date = new Date()
+                  date.setDate(date.getDate() + days)
+                  return date.toISOString().split('T')[0]
+                }),
+              createdAt: fc.constant(new Date().toISOString()),
+              updatedAt: fc.constant(new Date().toISOString())
+            }).chain(sub => {
+              // Ensure valid auto-renew/end date relationship
+              if (sub.isAutoRenew) {
+                return fc.constant({ ...sub, endDate: undefined })
+              } else if (!sub.endDate) {
+                return fc.constant({
+                  ...sub,
+                  endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                })
+              }
+              return fc.constant(sub)
+            }),
+            { minLength: 0, maxLength: 5 }
+          ),
+          async (subscriptionToDelete, otherSubscriptions) => {
+            const { deleteSubscription, subscriptions } = useSubscriptions()
+
+            // Set up initial state with the subscription to delete and other subscriptions
+            const allSubscriptions = [subscriptionToDelete, ...otherSubscriptions]
+            subscriptions.value = [...allSubscriptions]
+
+            // Store the initial count and IDs of other subscriptions
+            const initialCount = subscriptions.value.length
+            const otherSubscriptionIds = otherSubscriptions.map(s => s.id)
+
+            // Mock the database delete response (successful deletion)
+            // The delete chain is: from('subscriptions').delete().eq('id', id).eq('user_id', userId)
+            // Each method in the chain needs to return mockSupabase except the last eq which returns the result
+            mockSupabase.delete.mockReturnValue(mockSupabase)
+            mockSupabase.eq.mockReturnValueOnce(mockSupabase) // First eq returns mockSupabase for chaining
+            mockSupabase.eq.mockReturnValueOnce({ // Second eq returns the final result
+              data: null,
+              error: null
+            })
+
+            // Delete the subscription
+            await deleteSubscription(subscriptionToDelete.id)
+
+            // Verify the subscription no longer exists in the subscription list
+            expect(subscriptions.value).not.toContainEqual(subscriptionToDelete)
+            expect(subscriptions.value.find(s => s.id === subscriptionToDelete.id)).toBeUndefined()
+
+            // Verify the subscription list length decreased by 1
+            expect(subscriptions.value).toHaveLength(initialCount - 1)
+
+            // Verify other subscriptions are still present (not affected by deletion)
+            for (const otherId of otherSubscriptionIds) {
+              const stillExists = subscriptions.value.find(s => s.id === otherId)
+              expect(stillExists).toBeDefined()
+            }
+
+            // Verify the database delete was called with correct parameters
+            expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+            expect(mockSupabase.delete).toHaveBeenCalled()
+            expect(mockSupabase.eq).toHaveBeenCalledWith('id', subscriptionToDelete.id)
+            expect(mockSupabase.eq).toHaveBeenCalledWith('user_id', mockUser.id)
+
+            return true
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    /**
      * Feature: subscription-management, Property 4: End date and auto-renew relationship
      * Validates: Requirements 1.5
      * 
