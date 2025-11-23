@@ -20,7 +20,7 @@
   - Define supported currencies list (CNY, USD, EUR, GBP, JPY, HKD)
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 2.2 Write property test for currency conversion
+- [x] 2.2 Write property test for currency conversion
   - **Property 10: Currency conversion accuracy**
   - **Validates: Requirements 4.1, 4.3, 4.4**
 

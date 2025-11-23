@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useCurrency } from './useCurrency'
+import * as fc from 'fast-check'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -236,6 +237,58 @@ describe('useCurrency', () => {
         expect(currency.symbol).toBeTruthy()
         expect(currency.name).toBeTruthy()
       })
+    })
+  })
+
+  describe('Property-Based Tests', () => {
+    /**
+     * Feature: subscription-management, Property 10: Currency conversion accuracy
+     * Validates: Requirements 4.1, 4.3, 4.4
+     * 
+     * For any subscription in a currency different from the main currency, 
+     * the display amount should equal the original amount multiplied by 
+     * the exchange rate from original currency to main currency
+     */
+    it('Property 10: Currency conversion accuracy', () => {
+      fc.assert(
+        fc.property(
+          // Generate random positive amounts (subscriptions must have positive amounts)
+          fc.double({ min: 0.01, max: 100000, noNaN: true }),
+          // Generate random exchange rates (realistic range)
+          fc.double({ min: 0.01, max: 100, noNaN: true }),
+          // Generate currency pairs from supported currencies
+          fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+          fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+          (amount, rate, fromCurrency, toCurrency) => {
+            // Skip same currency conversions (tested separately)
+            if (fromCurrency === toCurrency) {
+              return true
+            }
+
+            const { convert, exchangeRates } = useCurrency()
+            
+            // Set up the exchange rate
+            exchangeRates.value.set(`${fromCurrency}_${toCurrency}`, {
+              from: fromCurrency,
+              to: toCurrency,
+              rate: rate,
+              lastUpdated: new Date().toISOString()
+            })
+
+            // Perform conversion
+            const convertedAmount = convert(amount, fromCurrency, toCurrency)
+            const expectedAmount = amount * rate
+
+            // Verify the conversion is accurate within floating point precision
+            // Using a relative tolerance for floating point comparison
+            const tolerance = Math.abs(expectedAmount) * 1e-10
+            const difference = Math.abs(convertedAmount - expectedAmount)
+            
+            return difference <= tolerance || difference < 1e-10
+          }
+        ),
+        { numRuns: 100 }
+      )
     })
   })
 })
