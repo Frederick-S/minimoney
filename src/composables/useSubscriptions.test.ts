@@ -251,5 +251,66 @@ describe('useSubscriptions', () => {
         { numRuns: 100 }
       )
     })
+
+    /**
+     * Feature: subscription-management, Property 3: Billing frequency validation
+     * Validates: Requirements 1.3
+     * 
+     * For any subscription, the billing frequency should only accept 'monthly' or 'yearly' as valid values
+     */
+    it('Property 3: Billing frequency validation', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate valid subscription name
+          fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+          // Generate valid amount
+          fc.double({ min: 0.01, max: 100000, noNaN: true }),
+          // Generate valid currency
+          fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+          // Generate INVALID billing frequency (anything other than 'monthly' or 'yearly')
+          fc.string({ minLength: 1, maxLength: 20 }).filter(s => s !== 'monthly' && s !== 'yearly'),
+          // Generate next billing date
+          fc.integer({ min: 1, max: 365 })
+            .map(days => {
+              const date = new Date()
+              date.setDate(date.getDate() + days)
+              return date.toISOString().split('T')[0]
+            }),
+          async (name, amount, currency, invalidBillingFrequency, nextBillingDate) => {
+            const subscriptionData = {
+              name: name.trim(),
+              amount,
+              currency,
+              billingFrequency: invalidBillingFrequency as any, // Force invalid value
+              isAutoRenew: true,
+              endDate: undefined,
+              nextBillingDate
+            }
+
+            const { createSubscription } = useSubscriptions()
+
+            // Attempt to create the subscription with invalid billing frequency
+            try {
+              await createSubscription(subscriptionData)
+              
+              // If we reach here, the validation failed to catch the invalid billing frequency
+              return false
+            } catch (error) {
+              // Verify that an error was thrown (validation worked)
+              expect(error).toBeDefined()
+              expect(error).toBeInstanceOf(Error)
+              
+              // Verify the error message is about billing frequency
+              const errorMessage = (error as Error).message
+              expect(errorMessage).toBeTruthy()
+              expect(errorMessage).toContain('账单频率')
+              
+              return true
+            }
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
   })
 })

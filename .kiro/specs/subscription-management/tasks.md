@@ -46,7 +46,7 @@
   - **Property 2: Required field validation**
   - **Validates: Requirements 1.2**
 
-- [ ] 3.4 Write property test for billing frequency validation
+- [x] 3.4 Write property test for billing frequency validation
   - **Property 3: Billing frequency validation**
   - **Validates: Requirements 1.3**
 
