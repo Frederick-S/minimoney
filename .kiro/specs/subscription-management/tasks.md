@@ -58,7 +58,7 @@
   - **Property 5: Subscription update persistence**
   - **Validates: Requirements 2.1, 2.4**
 
-- [ ] 3.7 Write property test for auto-renew to fixed end date transition
+- [x] 3.7 Write property test for auto-renew to fixed end date transition
   - **Property 6: Auto-renew to fixed end date transition**
   - **Validates: Requirements 2.2**
 
