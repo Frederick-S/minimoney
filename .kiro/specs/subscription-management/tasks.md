@@ -38,7 +38,7 @@
   - Add snake_case to camelCase conversion utilities
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.3_
 
-- [ ] 3.2 Write property test for subscription creation
+- [x] 3.2 Write property test for subscription creation
   - **Property 1: Subscription creation with valid data**
   - **Validates: Requirements 1.1, 1.4**
 

@@ -19,7 +19,12 @@ const convertKeysToCamelCase = <T extends Record<string, any>>(obj: any): T => {
   const result: any = {}
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = toCamelCase(key)
-    result[camelKey] = convertKeysToCamelCase(value)
+    // Convert null to undefined for optional fields (endDate)
+    if (value === null && camelKey === 'endDate') {
+      result[camelKey] = undefined
+    } else {
+      result[camelKey] = convertKeysToCamelCase(value)
+    }
   }
   return result
 }
