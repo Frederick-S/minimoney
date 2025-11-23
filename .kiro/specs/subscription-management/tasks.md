@@ -118,7 +118,7 @@
   - Handle both create and edit modes
   - _Requirements: 1.1, 1.2, 1.3, 1.5, 2.1, 2.2, 2.3, 2.5_
 
-- [ ] 6. Create subscription display components
+- [x] 6. Create subscription display components
 - [x] 6.1 Implement SubscriptionCard.vue component
   - Display subscription name
   - Display amount in main currency
@@ -131,23 +131,23 @@
   - Add edit and delete action buttons
   - _Requirements: 4.2, 4.5, 5.3, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 6.2 Write property test for dual currency display
+- [x] 6.2 Write property test for dual currency display
   - **Property 11: Dual currency display**
   - **Validates: Requirements 4.2**
 
-- [ ] 6.3 Write property test for subscription display information
+- [x] 6.3 Write property test for subscription display information
   - **Property 14: Subscription display information**
   - **Validates: Requirements 5.3**
 
-- [ ] 6.4 Write property test for auto-renew indicator
+- [x] 6.4 Write property test for auto-renew indicator
   - **Property 16: Auto-renew indicator**
   - **Validates: Requirements 6.1**
 
-- [ ] 6.5 Write property test for end date display
+- [x] 6.5 Write property test for end date display
   - **Property 17: End date display**
   - **Validates: Requirements 6.2**
 
-- [ ] 6.6 Write property test for next billing date calculation
+- [x] 6.6 Write property test for next billing date calculation
   - **Property 20: Next billing date calculation**
   - **Validates: Requirements 6.5**
 
