@@ -75,7 +75,7 @@
   - **Validates: Requirements 3.1, 3.3**
 
 - [ ] 4. Implement subscription calculations composable
-- [ ] 4.1 Create useSubscriptionCalculations composable
+- [x] 4.1 Create useSubscriptionCalculations composable
   - Implement calculateMonthlyEquivalent function
   - Implement calculateYearlyEquivalent function
   - Implement isExpired function to check if end date has passed
