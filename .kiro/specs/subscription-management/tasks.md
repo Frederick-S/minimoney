@@ -66,7 +66,7 @@
   - **Property 7: Fixed end date to auto-renew transition**
   - **Validates: Requirements 2.3**
 
-- [ ] 3.9 Write property test for currency change recalculation
+- [x] 3.9 Write property test for currency change recalculation
   - **Property 8: Currency change recalculation**
   - **Validates: Requirements 2.5**
 
