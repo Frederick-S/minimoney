@@ -42,7 +42,7 @@
   - **Property 1: Subscription creation with valid data**
   - **Validates: Requirements 1.1, 1.4**
 
-- [ ] 3.3 Write property test for required field validation
+- [x] 3.3 Write property test for required field validation
   - **Property 2: Required field validation**
   - **Validates: Requirements 1.2**
 

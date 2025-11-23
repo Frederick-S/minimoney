@@ -170,5 +170,86 @@ describe('useSubscriptions', () => {
         { numRuns: 100 }
       )
     })
+
+    /**
+     * Feature: subscription-management, Property 2: Required field validation
+     * Validates: Requirements 1.2
+     * 
+     * For any subscription data missing one or more required fields (name, amount, currency, billing frequency),
+     * attempting to create the subscription should be rejected with validation errors
+     */
+    it('Property 2: Required field validation', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate subscription data with at least one missing required field
+          fc.record({
+            name: fc.option(fc.string({ minLength: 1, maxLength: 100 })),
+            amount: fc.option(fc.double({ min: 0.01, max: 100000, noNaN: true })),
+            currency: fc.option(fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD')),
+            billingFrequency: fc.option(fc.constantFrom('monthly' as const, 'yearly' as const)),
+            isAutoRenew: fc.boolean(),
+            endDate: fc.option(
+              fc.integer({ min: 1, max: 365 })
+                .map(days => {
+                  const date = new Date()
+                  date.setDate(date.getDate() + days)
+                  return date.toISOString().split('T')[0]
+                })
+            ),
+            nextBillingDate: fc.integer({ min: 1, max: 365 })
+              .map(days => {
+                const date = new Date()
+                date.setDate(date.getDate() + days)
+                return date.toISOString().split('T')[0]
+              })
+          }).filter(data => {
+            // Ensure at least one required field is missing or invalid
+            const hasEmptyName = !data.name || data.name.trim() === ''
+            const hasMissingAmount = data.amount === null || data.amount === undefined
+            const hasMissingCurrency = !data.currency || data.currency.trim() === ''
+            const hasMissingBillingFrequency = !data.billingFrequency
+            
+            return hasEmptyName || hasMissingAmount || hasMissingCurrency || hasMissingBillingFrequency
+          }),
+          async (subscriptionData) => {
+            const { createSubscription } = useSubscriptions()
+
+            // Attempt to create the subscription with missing required fields
+            try {
+              await createSubscription(subscriptionData as any)
+              
+              // If we reach here, the validation failed to catch the missing field
+              return false
+            } catch (error) {
+              // Verify that an error was thrown (validation worked)
+              expect(error).toBeDefined()
+              expect(error).toBeInstanceOf(Error)
+              
+              // Verify the error message is meaningful (in Chinese as per the implementation)
+              const errorMessage = (error as Error).message
+              expect(errorMessage).toBeTruthy()
+              expect(errorMessage.length).toBeGreaterThan(0)
+              
+              // Verify the error message relates to validation
+              const validationMessages = [
+                '订阅名称不能为空',
+                '金额不能为空',
+                '货币不能为空',
+                '账单频率不能为空'
+              ]
+              
+              const hasValidationMessage = validationMessages.some(msg => 
+                errorMessage.includes(msg)
+              )
+              
+              expect(hasValidationMessage).toBe(true)
+              
+              return true
+            }
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
   })
 })
