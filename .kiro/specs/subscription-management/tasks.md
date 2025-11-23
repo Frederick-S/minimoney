@@ -50,7 +50,7 @@
   - **Property 3: Billing frequency validation**
   - **Validates: Requirements 1.3**
 
-- [ ] 3.5 Write property test for end date and auto-renew relationship
+- [x] 3.5 Write property test for end date and auto-renew relationship
   - **Property 4: End date and auto-renew relationship**
   - **Validates: Requirements 1.5**
 

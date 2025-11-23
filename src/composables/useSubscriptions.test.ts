@@ -312,5 +312,128 @@ describe('useSubscriptions', () => {
         { numRuns: 100 }
       )
     })
+
+    /**
+     * Feature: subscription-management, Property 4: End date and auto-renew relationship
+     * Validates: Requirements 1.5
+     * 
+     * For any subscription with an end date specified, the auto-renew flag should be false,
+     * and for any subscription with auto-renew true, the end date should be null
+     */
+    it('Property 4: End date and auto-renew relationship', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate valid subscription name
+          fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+          // Generate valid amount
+          fc.double({ min: 0.01, max: 100000, noNaN: true }),
+          // Generate valid currency
+          fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+          // Generate valid billing frequency
+          fc.constantFrom('monthly' as const, 'yearly' as const),
+          // Generate auto-renew flag
+          fc.boolean(),
+          // Generate optional end date (ISO string or undefined)
+          fc.option(
+            fc.integer({ min: 1, max: 365 })
+              .map(days => {
+                const date = new Date()
+                date.setDate(date.getDate() + days)
+                return date.toISOString().split('T')[0]
+              })
+          ),
+          // Generate next billing date
+          fc.integer({ min: 1, max: 365 })
+            .map(days => {
+              const date = new Date()
+              date.setDate(date.getDate() + days)
+              return date.toISOString().split('T')[0]
+            }),
+          async (name, amount, currency, billingFrequency, isAutoRenew, endDate, nextBillingDate) => {
+            const subscriptionData = {
+              name: name.trim(),
+              amount,
+              currency,
+              billingFrequency,
+              isAutoRenew,
+              endDate,
+              nextBillingDate
+            }
+
+            const { createSubscription } = useSubscriptions()
+
+            // Test the relationship between isAutoRenew and endDate
+            const hasEndDate = endDate !== null && endDate !== undefined
+            const isInvalidCombination = 
+              (isAutoRenew && hasEndDate) ||  // Auto-renew with end date is invalid
+              (!isAutoRenew && !hasEndDate)   // Non-auto-renew without end date is invalid
+
+            if (isInvalidCombination) {
+              // This combination should be rejected
+              try {
+                await createSubscription(subscriptionData)
+                
+                // If we reach here, validation failed to catch the invalid combination
+                return false
+              } catch (error) {
+                // Verify that an error was thrown (validation worked)
+                expect(error).toBeDefined()
+                expect(error).toBeInstanceOf(Error)
+                
+                const errorMessage = (error as Error).message
+                expect(errorMessage).toBeTruthy()
+                
+                // Verify the error message is about the auto-renew/end date relationship
+                const hasRelevantMessage = 
+                  errorMessage.includes('自动续订') || 
+                  errorMessage.includes('结束日期')
+                
+                expect(hasRelevantMessage).toBe(true)
+                
+                return true
+              }
+            } else {
+              // This combination should be accepted
+              // Create a mock subscription that would be returned from the database
+              const mockId = `sub-${Math.random().toString(36).substring(2, 9)}`
+              const mockCreatedAt = new Date().toISOString()
+              const mockUpdatedAt = new Date().toISOString()
+
+              // Reset and mock the database response with snake_case keys
+              mockSupabase.single.mockReset()
+              mockSupabase.single.mockResolvedValue({
+                data: {
+                  id: mockId,
+                  user_id: mockUser.id,
+                  name: subscriptionData.name,
+                  amount: subscriptionData.amount,
+                  currency: subscriptionData.currency,
+                  billing_frequency: subscriptionData.billingFrequency,
+                  is_auto_renew: subscriptionData.isAutoRenew,
+                  end_date: subscriptionData.endDate || null,
+                  next_billing_date: subscriptionData.nextBillingDate,
+                  created_at: mockCreatedAt,
+                  updated_at: mockUpdatedAt
+                },
+                error: null
+              })
+
+              const result = await createSubscription(subscriptionData)
+
+              // Verify the relationship is maintained in the result
+              if (result.isAutoRenew) {
+                expect(result.endDate).toBeUndefined()
+              } else {
+                expect(result.endDate).toBeDefined()
+                expect(result.endDate).toBeTruthy()
+              }
+
+              return true
+            }
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
   })
 })
