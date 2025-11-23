@@ -604,6 +604,98 @@ describe('useSubscriptions', () => {
     })
 
     /**
+     * Feature: subscription-management, Property 7: Fixed end date to auto-renew transition
+     * Validates: Requirements 2.3
+     * 
+     * For any subscription being changed from fixed end date to auto-renew,
+     * the end date should be cleared (set to null)
+     */
+    it('Property 7: Fixed end date to auto-renew transition', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate an existing subscription with fixed end date (non-auto-renew)
+          fc.record({
+            id: fc.uuid(),
+            userId: fc.constant('test-user-id'),
+            name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+            amount: fc.double({ min: 0.01, max: 100000, noNaN: true }),
+            currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+            billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
+            isAutoRenew: fc.constant(false),  // Always start with non-auto-renew
+            endDate: fc.integer({ min: 1, max: 365 })
+              .map(days => {
+                const date = new Date()
+                date.setDate(date.getDate() + days)
+                return date.toISOString().split('T')[0]
+              }),  // Always has an end date
+            nextBillingDate: fc.integer({ min: 1, max: 365 })
+              .map(days => {
+                const date = new Date()
+                date.setDate(date.getDate() + days)
+                return date.toISOString().split('T')[0]
+              }),
+            createdAt: fc.constant(new Date().toISOString()),
+            updatedAt: fc.constant(new Date().toISOString())
+          }),
+          async (originalSubscription) => {
+            const { updateSubscription, subscriptions } = useSubscriptions()
+
+            // Set up initial state with the original fixed end date subscription
+            subscriptions.value = [originalSubscription]
+
+            // Create the update: change from fixed end date to auto-renew
+            const updatedSubscription: Subscription = {
+              ...originalSubscription,
+              isAutoRenew: true,  // Change to auto-renew
+              endDate: undefined  // Clear the end date
+            }
+
+            // Mock the database response
+            const mockUpdatedAt = new Date().toISOString()
+            mockSupabase.single.mockReset()
+            mockSupabase.single.mockResolvedValue({
+              data: {
+                id: updatedSubscription.id,
+                user_id: updatedSubscription.userId,
+                name: updatedSubscription.name,
+                amount: updatedSubscription.amount,
+                currency: updatedSubscription.currency,
+                billing_frequency: updatedSubscription.billingFrequency,
+                is_auto_renew: updatedSubscription.isAutoRenew,
+                end_date: null,  // Database returns null for undefined
+                next_billing_date: updatedSubscription.nextBillingDate,
+                created_at: updatedSubscription.createdAt,
+                updated_at: mockUpdatedAt
+              },
+              error: null
+            })
+
+            // Update the subscription
+            const result = await updateSubscription(updatedSubscription)
+
+            // Verify the subscription was updated correctly
+            expect(result).toBeDefined()
+            expect(result.isAutoRenew).toBe(true)
+            expect(result.endDate).toBeUndefined()
+
+            // Verify the subscription is updated in the subscription list
+            expect(subscriptions.value).toHaveLength(1)
+            expect(subscriptions.value[0].isAutoRenew).toBe(true)
+            expect(subscriptions.value[0].endDate).toBeUndefined()
+
+            // Verify the database update was called
+            expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+            expect(mockSupabase.update).toHaveBeenCalled()
+            expect(mockSupabase.eq).toHaveBeenCalledWith('id', updatedSubscription.id)
+
+            return true
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    /**
      * Feature: subscription-management, Property 4: End date and auto-renew relationship
      * Validates: Requirements 1.5
      * 

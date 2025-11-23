@@ -62,7 +62,7 @@
   - **Property 6: Auto-renew to fixed end date transition**
   - **Validates: Requirements 2.2**
 
-- [ ] 3.8 Write property test for fixed end date to auto-renew transition
+- [x] 3.8 Write property test for fixed end date to auto-renew transition
   - **Property 7: Fixed end date to auto-renew transition**
   - **Validates: Requirements 2.3**
 
