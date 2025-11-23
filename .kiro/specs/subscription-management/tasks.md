@@ -152,7 +152,7 @@
   - **Validates: Requirements 6.5**
 
 - [ ] 7. Create subscription list component
-- [ ] 7.1 Implement SubscriptionList.vue component
+- [x] 7.1 Implement SubscriptionList.vue component
   - Display list of subscription cards
   - Group subscriptions by status (active/expired)
   - Show loading state
