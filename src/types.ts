@@ -227,3 +227,139 @@ export interface HomeViewProps {
 export interface HomeViewEmits {
   (e: 'edit', expense: Expense): void
 }
+
+/**
+ * Subscription interface for tracking recurring subscriptions
+ */
+export interface Subscription {
+  id: string
+  userId: string
+  name: string
+  amount: number
+  currency: string
+  billingFrequency: 'monthly' | 'yearly'
+  isAutoRenew: boolean
+  endDate?: string  // ISO date string, undefined if auto-renew
+  nextBillingDate: string  // ISO date string
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Currency interface for supported currencies
+ */
+export interface Currency {
+  code: string  // ISO 4217 currency code (USD, CNY, EUR, etc.)
+  symbol: string
+  name: string
+}
+
+/**
+ * Exchange rate interface for currency conversion
+ */
+export interface ExchangeRate {
+  from: string
+  to: string
+  rate: number
+  lastUpdated: string
+}
+
+/**
+ * User preference interface for storing user settings
+ */
+export interface UserPreference {
+  id: string
+  userId: string
+  category: string
+  key: string
+  value: string
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Subscription display model with currency conversion
+ */
+export interface SubscriptionDisplay extends Subscription {
+  displayAmount: number  // Amount in main currency
+  displayCurrency: string  // Main currency code
+  originalAmount: number  // Original amount
+  originalCurrency: string  // Original currency
+  isExpired: boolean
+  isEndingSoon: boolean  // Within 30 days of end date
+  daysUntilEnd?: number
+}
+
+/**
+ * Subscription summary for aggregate calculations
+ */
+export interface SubscriptionSummary {
+  totalMonthly: number
+  totalYearly: number
+  activeCount: number
+  expiredCount: number
+  currency: string
+}
+
+/**
+ * Props for subscription form component
+ */
+export interface SubscriptionFormProps {
+  modelValue: boolean
+  subscription?: Subscription | null
+  mainCurrency: string
+}
+
+/**
+ * Emits for subscription form component
+ */
+export interface SubscriptionFormEmits {
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'save', subscription: Omit<Subscription, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): void
+  (e: 'update', subscription: Subscription): void
+}
+
+/**
+ * Props for subscription list component
+ */
+export interface SubscriptionListProps {
+  subscriptions: SubscriptionDisplay[]
+  loading: boolean
+}
+
+/**
+ * Emits for subscription list component
+ */
+export interface SubscriptionListEmits {
+  (e: 'edit', subscription: Subscription): void
+  (e: 'delete', id: string): void
+}
+
+/**
+ * Props for subscription card component
+ */
+export interface SubscriptionCardProps {
+  subscription: SubscriptionDisplay
+}
+
+/**
+ * Props for subscription summary component
+ */
+export interface SubscriptionSummaryProps {
+  summary: SubscriptionSummary
+}
+
+/**
+ * Props for currency settings component
+ */
+export interface CurrencySettingsProps {
+  modelValue: string
+  currencies: Currency[]
+}
+
+/**
+ * Emits for currency settings component
+ */
+export interface CurrencySettingsEmits {
+  (e: 'update:modelValue', currency: string): void
+}

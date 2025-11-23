@@ -217,3 +217,90 @@ CREATE TRIGGER update_categories_hierarchy
     BEFORE INSERT OR UPDATE ON categories 
     FOR EACH ROW 
     EXECUTE FUNCTION update_category_hierarchy();
+--
+ Subscriptions table for tracking recurring subscriptions
+CREATE TABLE subscriptions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    name TEXT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+    currency TEXT NOT NULL,
+    billing_frequency TEXT NOT NULL CHECK (billing_frequency IN ('monthly', 'yearly')),
+    is_auto_renew BOOLEAN NOT NULL DEFAULT TRUE,
+    end_date DATE,
+    next_billing_date DATE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    
+    -- Ensure auto-renew and end_date relationship is valid
+    CHECK (
+        (is_auto_renew = TRUE AND end_date IS NULL) OR
+        (is_auto_renew = FALSE AND end_date IS NOT NULL)
+    )
+);
+
+-- User preferences table for storing user-specific settings
+CREATE TABLE user_preferences (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    category TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    
+    -- Ensure unique preference per user, category, and key
+    UNIQUE(user_id, category, key)
+);
+
+-- Create indexes for subscriptions
+CREATE INDEX subscriptions_user_id_idx ON subscriptions(user_id);
+CREATE INDEX subscriptions_next_billing_date_idx ON subscriptions(next_billing_date);
+CREATE INDEX subscriptions_end_date_idx ON subscriptions(end_date);
+
+-- Create indexes for user_preferences
+CREATE INDEX user_preferences_user_id_idx ON user_preferences(user_id);
+CREATE INDEX user_preferences_category_idx ON user_preferences(user_id, category);
+
+-- Enable Row Level Security for subscriptions
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for subscriptions
+CREATE POLICY "Users can view own subscriptions" ON subscriptions
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own subscriptions" ON subscriptions
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own subscriptions" ON subscriptions
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own subscriptions" ON subscriptions
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Enable Row Level Security for user_preferences
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for user_preferences
+CREATE POLICY "Users can view own preferences" ON user_preferences
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own preferences" ON user_preferences
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own preferences" ON user_preferences
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own preferences" ON user_preferences
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Triggers for subscriptions and user_preferences
+CREATE TRIGGER update_subscriptions_updated_at 
+    BEFORE UPDATE ON subscriptions 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_preferences_updated_at 
+    BEFORE UPDATE ON user_preferences 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
