@@ -151,7 +151,7 @@
   - **Property 20: Next billing date calculation**
   - **Validates: Requirements 6.5**
 
-- [ ] 7. Create subscription list component
+- [x] 7. Create subscription list component
 - [x] 7.1 Implement SubscriptionList.vue component
   - Display list of subscription cards
   - Group subscriptions by status (active/expired)
@@ -160,7 +160,7 @@
   - Emit edit and delete events
   - _Requirements: 5.1, 5.3_
 
-- [ ] 7.2 Write property test for subscription list completeness
+- [x] 7.2 Write property test for subscription list completeness
   - **Property 13: Subscription list completeness**
   - **Validates: Requirements 5.1**
 
