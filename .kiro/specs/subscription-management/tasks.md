@@ -8,7 +8,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.5, 2.1, 2.2, 2.3, 4.1, 4.2_
 
 - [ ] 2. Implement currency management composable
-- [ ] 2.1 Create useCurrency composable with exchange rate API integration
+- [x] 2.1 Create useCurrency composable with exchange rate API integration
   - Implement fetchExchangeRates function to call exchangerate-api.com
   - Implement localStorage caching with 24-hour validity
   - Implement loadCachedRates and cacheRates functions
