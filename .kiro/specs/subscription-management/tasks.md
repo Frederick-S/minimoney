@@ -24,7 +24,7 @@
   - **Property 10: Currency conversion accuracy**
   - **Validates: Requirements 4.1, 4.3, 4.4**
 
-- [ ] 2.3 Write property test for same currency display
+- [x] 2.3 Write property test for same currency display
   - **Property 12: Same currency display**
   - **Validates: Requirements 4.5**
 

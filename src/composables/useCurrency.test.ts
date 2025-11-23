@@ -290,5 +290,39 @@ describe('useCurrency', () => {
         { numRuns: 100 }
       )
     })
+
+    /**
+     * Feature: subscription-management, Property 12: Same currency display
+     * Validates: Requirements 4.5
+     * 
+     * For any subscription where the original currency matches the main currency,
+     * the display should show the amount without conversion notation
+     */
+    it('Property 12: Same currency display', () => {
+      fc.assert(
+        fc.property(
+          // Generate random positive amounts (subscriptions must have positive amounts)
+          fc.double({ min: 0.01, max: 100000, noNaN: true }),
+          // Generate currency from supported currencies
+          fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+          (amount, currency) => {
+            const { convert, getExchangeRate } = useCurrency()
+            
+            // When converting from a currency to itself
+            const convertedAmount = convert(amount, currency, currency)
+            const exchangeRate = getExchangeRate(currency, currency)
+
+            // The converted amount should equal the original amount (no conversion)
+            expect(convertedAmount).toBe(amount)
+            
+            // The exchange rate should be 1 (identity)
+            expect(exchangeRate).toBe(1)
+            
+            return true
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
   })
 })
