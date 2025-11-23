@@ -104,8 +104,8 @@
   - **Property 23: Expired subscription exclusion from totals**
   - **Validates: Requirements 7.5, 7.6**
 
-- [ ] 5. Create subscription form component
-- [ ] 5.1 Implement SubscriptionForm.vue component
+- [x] 5. Create subscription form component
+- [x] 5.1 Implement SubscriptionForm.vue component
   - Create form with fields: name, amount, currency, billing frequency, renewal type, end date
   - Implement form validation for required fields
   - Implement validation for positive amounts
