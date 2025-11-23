@@ -74,7 +74,7 @@
   - **Property 9: Subscription deletion**
   - **Validates: Requirements 3.1, 3.3**
 
-- [ ] 4. Implement subscription calculations composable
+- [x] 4. Implement subscription calculations composable
 - [x] 4.1 Create useSubscriptionCalculations composable
   - Implement calculateMonthlyEquivalent function
   - Implement calculateYearlyEquivalent function
@@ -84,23 +84,23 @@
   - Implement calculateTotalCosts function for monthly and yearly totals
   - _Requirements: 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-- [ ] 4.2 Write property test for expiration detection
+- [x] 4.2 Write property test for expiration detection
   - **Property 19: Expiration detection**
   - **Validates: Requirements 6.4**
 
-- [ ] 4.3 Write property test for ending soon detection
+- [x] 4.3 Write property test for ending soon detection
   - **Property 18: Ending soon detection**
   - **Validates: Requirements 6.3**
 
-- [ ] 4.4 Write property test for monthly total calculation
+- [x] 4.4 Write property test for monthly total calculation
   - **Property 21: Monthly total calculation**
   - **Validates: Requirements 7.1, 7.3**
 
-- [ ] 4.5 Write property test for yearly total calculation
+- [x] 4.5 Write property test for yearly total calculation
   - **Property 22: Yearly total calculation**
   - **Validates: Requirements 7.2, 7.4**
 
-- [ ] 4.6 Write property test for expired subscription exclusion from totals
+- [x] 4.6 Write property test for expired subscription exclusion from totals
   - **Property 23: Expired subscription exclusion from totals**
   - **Validates: Requirements 7.5, 7.6**
 
