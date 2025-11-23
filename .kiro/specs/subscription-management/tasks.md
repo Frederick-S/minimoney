@@ -119,7 +119,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.5, 2.1, 2.2, 2.3, 2.5_
 
 - [ ] 6. Create subscription display components
-- [ ] 6.1 Implement SubscriptionCard.vue component
+- [x] 6.1 Implement SubscriptionCard.vue component
   - Display subscription name
   - Display amount in main currency
   - Display original amount and currency if different
