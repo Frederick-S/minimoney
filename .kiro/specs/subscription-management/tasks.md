@@ -164,8 +164,8 @@
   - **Property 13: Subscription list completeness**
   - **Validates: Requirements 5.1**
 
-- [ ] 8. Create subscription summary component
-- [ ] 8.1 Implement SubscriptionSummary.vue component
+- [x] 8. Create subscription summary component
+- [x] 8.1 Implement SubscriptionSummary.vue component
   - Display total monthly cost
   - Display total yearly cost
   - Display active subscription count
