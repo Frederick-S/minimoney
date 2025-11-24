@@ -223,8 +223,8 @@
 - [ ] 13. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 14. Add confirmation dialog for subscription deletion
-- [ ] 14.1 Implement deletion confirmation in SubscriptionsView
+- [x] 14. Add confirmation dialog for subscription deletion
+- [x] 14.1 Implement deletion confirmation in SubscriptionsView
   - Show Vuetify confirmation dialog before deletion
   - Display subscription name in confirmation message
   - Handle confirm and cancel actions
