@@ -173,8 +173,8 @@
   - Use card layout with clear labels
   - _Requirements: 7.1, 7.2_
 
-- [ ] 9. Create currency settings component
-- [ ] 9.1 Implement CurrencySettings.vue component
+- [x] 9. Create currency settings component
+- [x] 9.1 Implement CurrencySettings.vue component
   - Display current main currency
   - Provide currency selector dropdown
   - Emit update event when currency changes
