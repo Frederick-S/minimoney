@@ -211,8 +211,8 @@
   - Import SubscriptionsView component
   - _Requirements: 5.1, 5.2_
 
-- [ ] 12. Add database migration scripts
-- [ ] 12.1 Create SQL migration files
+- [x] 12. Add database migration scripts
+- [x] 12.1 Create SQL migration files
   - Create db/subscriptions-schema.sql with subscriptions table
   - Create db/user-preferences-schema.sql with user_preferences table
   - Add RLS policies for both tables
