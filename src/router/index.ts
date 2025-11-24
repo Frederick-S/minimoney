@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { useSupabase } from '../composables/useSupabase'
 import HomeView from '../components/HomeView.vue'
 import ChartsView from '../components/ChartsView.vue'
+import SubscriptionsView from '../components/SubscriptionsView.vue'
 import Auth from '../components/Auth.vue'
 import ResetPassword from '../components/ResetPassword.vue'
 
@@ -32,6 +33,12 @@ const routes = [
     name: 'Charts',
     component: ChartsView,
     props: true,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/subscriptions',
+    name: 'Subscriptions',
+    component: SubscriptionsView,
     meta: { requiresAuth: true }
   },
   {

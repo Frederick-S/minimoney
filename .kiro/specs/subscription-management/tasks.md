@@ -198,14 +198,14 @@
   - **Property 15: State persistence across navigation**
   - **Validates: Requirements 5.5**
 
-- [ ] 11. Add subscriptions tab to navigation
+- [x] 11. Add subscriptions tab to navigation
 - [x] 11.1 Update BottomNavigation.vue to include subscriptions tab
   - Add subscriptions button with icon (mdi-sync)
   - Add Chinese label "订阅"
   - Update route mapping to handle subscriptions tab
   - _Requirements: 5.2, 5.4_
 
-- [ ] 11.2 Add subscriptions route to router
+- [x] 11.2 Add subscriptions route to router
   - Create route for /subscriptions path
   - Set requiresAuth meta flag
   - Import SubscriptionsView component
