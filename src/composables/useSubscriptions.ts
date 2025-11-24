@@ -38,10 +38,12 @@ const convertKeysToSnakeCase = (obj: Record<string, any>): Record<string, any> =
   return result
 }
 
+// Module-level refs for state persistence across navigation
+const subscriptions = ref<Subscription[]>([])
+const loading = ref(false)
+
 export function useSubscriptions() {
   const { user, supabase } = useSupabase()
-  const subscriptions = ref<Subscription[]>([])
-  const loading = ref(false)
 
   /**
    * Calculate next billing date based on start date and billing frequency

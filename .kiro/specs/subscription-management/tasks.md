@@ -181,7 +181,7 @@
   - Show supported currencies with symbols
   - _Requirements: 4.1, 4.3_
 
-- [ ] 10. Create main subscriptions view
+- [x] 10. Create main subscriptions view
 - [x] 10.1 Implement SubscriptionsView.vue component
   - Load subscriptions on mount
   - Load currency preferences on mount
@@ -194,7 +194,7 @@
   - Handle loading and error states
   - _Requirements: 1.1, 1.4, 2.1, 2.4, 3.1, 3.3, 4.1, 4.3, 5.1, 5.5_
 
-- [ ] 10.2 Write property test for state persistence across navigation
+- [x] 10.2 Write property test for state persistence across navigation
   - **Property 15: State persistence across navigation**
   - **Validates: Requirements 5.5**
 
