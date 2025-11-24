@@ -199,7 +199,7 @@
   - **Validates: Requirements 5.5**
 
 - [ ] 11. Add subscriptions tab to navigation
-- [ ] 11.1 Update BottomNavigation.vue to include subscriptions tab
+- [x] 11.1 Update BottomNavigation.vue to include subscriptions tab
   - Add subscriptions button with icon (mdi-sync)
   - Add Chinese label "订阅"
   - Update route mapping to handle subscriptions tab

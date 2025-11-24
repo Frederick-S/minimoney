@@ -22,6 +22,14 @@
       <v-icon>mdi-chart-pie</v-icon>
       <span>图表</span>
     </v-btn>
+    
+    <v-btn 
+      value="subscriptions"
+      @click="() => $router.push('/subscriptions')"
+    >
+      <v-icon>mdi-sync</v-icon>
+      <span>订阅</span>
+    </v-btn>
   </v-bottom-navigation>
 </template>
 
@@ -38,6 +46,8 @@ const getTabFromRoute = (routeName: string | symbol | null | undefined) => {
       return 'home'
     case 'Charts':
       return 'charts'
+    case 'Subscriptions':
+      return 'subscriptions'
     default:
       return 'home'
   }
