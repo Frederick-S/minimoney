@@ -182,7 +182,7 @@
   - _Requirements: 4.1, 4.3_
 
 - [ ] 10. Create main subscriptions view
-- [ ] 10.1 Implement SubscriptionsView.vue component
+- [x] 10.1 Implement SubscriptionsView.vue component
   - Load subscriptions on mount
   - Load currency preferences on mount
   - Fetch exchange rates (check cache first)
