@@ -2,10 +2,7 @@
   <div class="px-4 pb-16">
     <!-- Loading State for Initial Load -->
     <div v-if="initialLoading" class="d-flex justify-center align-center py-8">
-      <v-progress-circular indeterminate size="64" color="primary" />
-      <div class="text-body-1 text-medium-emphasis ml-4">
-        加载中...
-      </div>
+      <v-progress-circular indeterminate size="64" />
     </div>
 
     <!-- Error State -->
@@ -29,49 +26,6 @@
 
     <!-- Main Content -->
     <template v-else>
-      <!-- Currency Settings (Collapsible) -->
-      <v-expansion-panels v-model="settingsPanel" class="mb-4">
-        <v-expansion-panel>
-          <v-expansion-panel-title>
-            <v-icon class="mr-2">mdi-cog</v-icon>
-            货币设置
-          </v-expansion-panel-title>
-          <v-expansion-panel-text>
-            <CurrencySettings
-              v-model="mainCurrency"
-              :currencies="supportedCurrencies"
-              @update:model-value="handleCurrencyChange"
-            />
-            
-            <!-- Exchange Rate Status and Retry -->
-            <v-card class="mt-4" variant="outlined">
-              <v-card-text>
-                <div class="d-flex align-center justify-space-between">
-                  <div>
-                    <div class="text-body-2 text-medium-emphasis">
-                      汇率状态
-                    </div>
-                    <div class="text-body-1">
-                      {{ ratesLastUpdated ? `最后更新: ${formatDateTime(ratesLastUpdated)}` : '未加载' }}
-                    </div>
-                  </div>
-                  <v-btn
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    :loading="fetchingRates"
-                    @click="handleRefreshRates"
-                  >
-                    <v-icon left>mdi-refresh</v-icon>
-                    刷新汇率
-                  </v-btn>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-      </v-expansion-panels>
-
       <!-- Subscription Summary -->
       <SubscriptionSummary :summary="summary" />
 
@@ -82,18 +36,6 @@
         @edit="handleEdit"
         @delete="handleDeleteRequest"
       />
-
-      <!-- Floating Action Button -->
-      <v-btn
-        color="primary"
-        icon
-        size="x-large"
-        elevation="8"
-        class="floating-action-button"
-        @click="handleAdd"
-      >
-        <v-icon>mdi-plus</v-icon>
-      </v-btn>
 
       <!-- Subscription Form Dialog -->
       <SubscriptionForm
@@ -129,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, defineExpose } from 'vue'
 import { useSubscriptions } from '../composables/useSubscriptions'
 import { useCurrency } from '../composables/useCurrency'
 import { useSubscriptionCalculations } from '../composables/useSubscriptionCalculations'
@@ -137,7 +79,6 @@ import { useToast } from '../composables/useToast'
 import SubscriptionList from './SubscriptionList.vue'
 import SubscriptionForm from './SubscriptionForm.vue'
 import SubscriptionSummary from './SubscriptionSummary.vue'
-import CurrencySettings from './CurrencySettings.vue'
 import type { Subscription, SubscriptionDisplay } from '../types'
 
 // Composables
@@ -152,10 +93,7 @@ const {
 
 const {
   mainCurrency,
-  supportedCurrencies,
-  ratesLastUpdated,
   loadUserCurrencyPreference,
-  setMainCurrency,
   fetchExchangeRates,
   loadCachedRates,
   convert
@@ -178,8 +116,6 @@ const editingSubscription = ref<Subscription | null>(null)
 const showDeleteDialog = ref(false)
 const deletingSubscription = ref<Subscription | null>(null)
 const deleting = ref(false)
-const settingsPanel = ref<number | undefined>(undefined)
-const fetchingRates = ref(false)
 
 /**
  * Convert subscriptions to display format with currency conversion
@@ -258,71 +194,6 @@ const initializeData = async () => {
  */
 const retryLoad = async () => {
   await initializeData()
-}
-
-/**
- * Format date time for display
- */
-const formatDateTime = (isoString: string): string => {
-  try {
-    const date = new Date(isoString)
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return '未知'
-  }
-}
-
-/**
- * Handle manual refresh of exchange rates
- */
-const handleRefreshRates = async () => {
-  try {
-    fetchingRates.value = true
-    await fetchExchangeRates(mainCurrency.value)
-    showSuccess('汇率已更新')
-  } catch (error) {
-    console.error('Failed to refresh exchange rates:', error)
-    const errorMsg = error instanceof Error ? error.message : '刷新汇率失败'
-    showError(errorMsg)
-  } finally {
-    fetchingRates.value = false
-  }
-}
-
-/**
- * Handle currency change
- */
-const handleCurrencyChange = async (newCurrency: string) => {
-  try {
-    loading.value = true
-    await setMainCurrency(newCurrency)
-    
-    // Fetch new exchange rates for the new base currency
-    try {
-      await fetchExchangeRates(newCurrency)
-      showSuccess('主货币已更新')
-    } catch (error) {
-      console.error('Failed to fetch exchange rates:', error)
-      const errorMsg = error instanceof Error ? error.message : '无法获取汇率'
-      showWarning(`${errorMsg}，将仅显示原始货币`)
-      // Still show success for currency change even if rates fail
-      showSuccess('主货币已更新（汇率获取失败）')
-    }
-  } catch (error) {
-    console.error('Error changing currency:', error)
-    const errorMsg = error instanceof Error ? error.message : '更新货币设置失败'
-    showError(errorMsg)
-    // Revert currency on failure
-    await loadUserCurrencyPreference()
-  } finally {
-    loading.value = false
-  }
 }
 
 /**
@@ -422,13 +293,13 @@ watch(subscriptions, () => {
   // State is automatically maintained through reactive refs
   // No need to reload from database
 }, { deep: true })
+
+// Expose handleAdd for parent component to call
+defineExpose({
+  handleAdd
+})
 </script>
 
 <style scoped>
-.floating-action-button {
-  position: fixed;
-  bottom: 80px;
-  right: 16px;
-  z-index: 10;
-}
+/* Styles if needed */
 </style>

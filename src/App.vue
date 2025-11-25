@@ -14,6 +14,7 @@
           :user="user" 
           @logout="handleLogout" 
           @change-password="showPasswordChange = true"
+          @currency-settings="showCurrencySettings = true"
           @import="showImport = true"
           @export="showExport = true"
         />
@@ -27,18 +28,19 @@
           }"
         >
           <router-view 
+            ref="currentView"
             :refresh-trigger="refreshTrigger"
           />
         </div>
 
-        <!-- Floating Action Button (only show on home tab and if authenticated) -->
-        <div v-if="user && $route.name === 'Home'" class="fixed-fab">
+        <!-- Floating Action Button (only show on home and subscriptions tabs if authenticated) -->
+        <div v-if="user && ($route.name === 'Home' || $route.name === 'Subscriptions')" class="fixed-fab">
           <v-fab
             location="bottom center"
             size="56"
             color="primary"
             icon="mdi-plus"
-            @click="openFormForNew"
+            @click="handleFabClick"
           />
         </div>
 
@@ -70,6 +72,18 @@
           v-model="showExport"
         />
 
+        <!-- Currency Settings Dialog (only show if authenticated) -->
+        <v-dialog
+          v-if="user"
+          v-model="showCurrencySettings"
+          max-width="500"
+        >
+          <CurrencySettings
+            v-model="mainCurrency"
+            :currencies="supportedCurrencies"
+          />
+        </v-dialog>
+
         <!-- Toast Container for notifications -->
         <ToastContainer />
       </v-container>
@@ -83,23 +97,28 @@ import { useRouter } from 'vue-router'
 import { useSupabase } from './composables/useSupabase'
 import { useExpenseForm } from './composables/useExpenseForm'
 import { useExpenseManagement } from './composables/useExpenseManagement'
+import { useCurrency } from './composables/useCurrency'
 import AppHeader from './components/AppHeader.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
 import ExportExpenses from './components/ExportExpenses.vue'
 import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
 import ImportExpenses from './components/ImportExpenses.vue'
+import CurrencySettings from './components/CurrencySettings.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { type Expense } from './types'
 
 const { user, loading, signOut, initAuth, supabase } = useSupabase()
 const { refreshTrigger } = useExpenseManagement()
 const { showForm, editingExpense, openFormForNew, openFormForEdit } = useExpenseForm()
+const { mainCurrency, supportedCurrencies } = useCurrency()
 const router = useRouter()
 
 const showPasswordChange = ref(false)
 const showImport = ref(false)
 const showExport = ref(false)
+const showCurrencySettings = ref(false)
+const currentView = ref<any>(null)
 
 // Initialize auth on app load
 onMounted(async () => {
@@ -116,6 +135,17 @@ onMounted(async () => {
 const handleLogout = async () => {
   await signOut()
   router.push('/login')
+}
+
+const handleFabClick = () => {
+  if (router.currentRoute.value.name === 'Home') {
+    openFormForNew()
+  } else if (router.currentRoute.value.name === 'Subscriptions') {
+    // Call handleAdd method on SubscriptionsView component
+    if (currentView.value?.handleAdd) {
+      currentView.value.handleAdd()
+    }
+  }
 }
 
 // Note: handleEditExpense is now handled through useExpenseForm composable
