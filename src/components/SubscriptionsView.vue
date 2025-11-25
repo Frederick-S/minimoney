@@ -57,7 +57,7 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn variant="text" @click="cancelDelete">
+            <v-btn variant="outlined" @click="cancelDelete">
               取消
             </v-btn>
             <v-btn color="error" variant="flat" @click="confirmDelete" :loading="deleting">

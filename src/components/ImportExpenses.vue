@@ -251,13 +251,13 @@
       <v-card-actions class="pa-4">
         <v-btn
           v-if="step > 1 && !importing && !importComplete"
-          variant="text"
+          variant="outlined"
           @click="previousStep"
         >
           上一步
         </v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="closeDialog" :disabled="importing">
+        <v-btn variant="outlined" @click="closeDialog" :disabled="importing">
           {{ importComplete ? '关闭' : '取消' }}
         </v-btn>
         <v-btn
