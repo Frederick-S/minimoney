@@ -16,19 +16,19 @@
     </v-btn>
     
     <v-btn 
-      value="charts"
-      @click="() => $router.push('/charts')"
-    >
-      <v-icon>mdi-chart-pie</v-icon>
-      <span>图表</span>
-    </v-btn>
-    
-    <v-btn 
       value="subscriptions"
       @click="() => $router.push('/subscriptions')"
     >
       <v-icon>mdi-sync</v-icon>
       <span>订阅</span>
+    </v-btn>
+    
+    <v-btn 
+      value="charts"
+      @click="() => $router.push('/charts')"
+    >
+      <v-icon>mdi-chart-pie</v-icon>
+      <span>图表</span>
     </v-btn>
   </v-bottom-navigation>
 </template>
