@@ -234,6 +234,10 @@ export function useCurrency() {
 
   /**
    * Load user's main currency preference from database
+   * 
+   * Note: Uses .single() which returns PGRST116 error when no row exists.
+   * This is expected behavior for first-time users and is handled gracefully
+   * by returning the default currency (CNY).
    */
   const loadUserCurrencyPreference = async (): Promise<string> => {
     if (!user.value?.id) {
@@ -252,7 +256,8 @@ export function useCurrency() {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No preference found, return default
+          // Expected: No preference found for first-time users
+          // .single() returns PGRST116 when 0 rows match the query
           mainCurrency.value = 'CNY'
           return 'CNY'
         }
