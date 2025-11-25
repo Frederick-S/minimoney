@@ -362,4 +362,6 @@ export interface CurrencySettingsProps {
  */
 export interface CurrencySettingsEmits {
   (e: 'update:modelValue', currency: string): void
+  (e: 'save'): void
+  (e: 'cancel'): void
 }

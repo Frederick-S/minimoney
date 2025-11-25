@@ -1,70 +1,73 @@
 <template>
-  <v-card elevation="2">
-    <v-card-title class="text-h6 font-weight-medium">
+  <v-card>
+    <v-card-title class="text-h6 pa-4">
       货币设置
     </v-card-title>
-    <v-card-text>
-      <v-row>
-        <!-- Current Main Currency Display -->
-        <v-col cols="12">
-          <div class="mb-4">
-            <div class="text-body-2 text-medium-emphasis mb-2">
-              当前主货币
-            </div>
-            <div class="text-h6 font-weight-bold">
-              {{ getCurrentCurrencyDisplay() }}
-            </div>
-          </div>
-        </v-col>
 
-        <!-- Currency Selector -->
-        <v-col cols="12">
-          <v-select
-            :model-value="modelValue"
-            :items="currencyItems"
-            item-title="display"
-            item-value="code"
-            label="选择主货币"
-            variant="outlined"
-            density="comfortable"
-            @update:model-value="handleCurrencyChange"
-          >
-            <template #item="{ props: itemProps, item }">
-              <v-list-item
-                v-bind="itemProps"
-                :title="item.raw.display"
-                :subtitle="item.raw.name"
-              >
-                <template #prepend>
-                  <span class="text-h6 mr-2">{{ item.raw.symbol }}</span>
-                </template>
-              </v-list-item>
-            </template>
-          </v-select>
-        </v-col>
+    <v-card-text class="pa-4">
+      <!-- Currency Selector -->
+      <v-select
+        v-model="selectedCurrency"
+        :items="currencyItems"
+        item-title="display"
+        item-value="code"
+        label="选择主货币"
+        variant="outlined"
+        density="comfortable"
+        class="mb-4"
+      >
+        <template #item="{ props: itemProps, item }">
+          <v-list-item
+            v-bind="itemProps"
+            :title="item.raw.display"
+          />
+        </template>
+      </v-select>
 
-        <!-- Help Text -->
-        <v-col cols="12">
-          <v-alert
-            type="info"
-            variant="tonal"
-            density="compact"
-            class="text-body-2"
-          >
-            所有订阅金额将转换为所选货币显示
-          </v-alert>
-        </v-col>
-      </v-row>
+      <!-- Help Text -->
+      <v-alert
+        type="info"
+        variant="tonal"
+        density="compact"
+        class="text-body-2"
+      >
+        所有订阅金额将转换为所选货币显示
+      </v-alert>
     </v-card-text>
+
+    <v-card-actions class="pa-4">
+      <v-spacer />
+      <v-btn
+        variant="text"
+        @click="handleCancel"
+      >
+        取消
+      </v-btn>
+      <v-btn
+        color="primary"
+        :loading="saving"
+        @click="handleSave"
+      >
+        保存
+      </v-btn>
+    </v-card-actions>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { CurrencySettingsProps, CurrencySettingsEmits } from '../types'
 
 const props = defineProps<CurrencySettingsProps>()
 const emit = defineEmits<CurrencySettingsEmits>()
+
+const selectedCurrency = ref(props.modelValue)
+const saving = ref(false)
+
+// Watch for external changes to modelValue
+watch(() => props.modelValue, (newValue) => {
+  selectedCurrency.value = newValue
+})
 
 /**
  * Prepare currency items for the select dropdown
@@ -79,21 +82,26 @@ const currencyItems = computed(() => {
 })
 
 /**
- * Get current currency display string
+ * Handle save button click
  */
-const getCurrentCurrencyDisplay = (): string => {
-  const current = props.currencies.find(c => c.code === props.modelValue)
-  if (!current) return props.modelValue
-  
-  return `${current.symbol} ${current.code} - ${current.name}`
+const handleSave = (): void => {
+  saving.value = true
+  emit('update:modelValue', selectedCurrency.value)
+  emit('save')
 }
 
 /**
- * Handle currency change event
+ * Handle cancel button click
  */
-const handleCurrencyChange = (newCurrency: string): void => {
-  emit('update:modelValue', newCurrency)
+const handleCancel = (): void => {
+  selectedCurrency.value = props.modelValue
+  emit('cancel')
 }
+
+// Expose saving state for parent
+defineExpose({
+  saving
+})
 </script>
 
 <style scoped>

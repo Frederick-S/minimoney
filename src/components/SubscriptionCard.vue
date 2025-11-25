@@ -130,7 +130,7 @@ const formatAmount = (amount: number, currency: string): string => {
       'EUR': '€',
       'GBP': '£',
       'JPY': '¥',
-      'HKD': 'HK$'
+      'HKD': '$'
     }
     
     const symbol = currencySymbols[currency] || currency || '¥'

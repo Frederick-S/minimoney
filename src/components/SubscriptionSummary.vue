@@ -62,7 +62,7 @@ const formatAmount = (amount: number, currency: string): string => {
     'EUR': '€',
     'GBP': '£',
     'JPY': '¥',
-    'HKD': 'HK$'
+    'HKD': '$'
   }
   
   const symbol = currencySymbols[currency] || currency
@@ -84,7 +84,7 @@ const getCurrencyName = (currency: string): string => {
     'EUR': '欧元 (€)',
     'GBP': '英镑 (£)',
     'JPY': '日元 (¥)',
-    'HKD': '港币 (HK$)'
+    'HKD': '港币 ($)'
   }
   
   return currencyNames[currency] || currency

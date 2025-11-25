@@ -77,10 +77,23 @@
           v-if="user"
           v-model="showCurrencySettings"
           max-width="500"
+          :fullscreen="$vuetify.display.mobile"
         >
+          <v-card v-if="loadingCurrencySettings">
+            <v-card-title class="text-h6 pa-4">
+              货币设置
+            </v-card-title>
+            <v-card-text class="pa-4 d-flex justify-center align-center" style="min-height: 200px;">
+              <v-progress-circular indeterminate size="64" />
+            </v-card-text>
+          </v-card>
           <CurrencySettings
-            v-model="mainCurrency"
+            v-else
+            ref="currencySettingsRef"
+            v-model="tempCurrency"
             :currencies="supportedCurrencies"
+            @save="handleCurrencySave"
+            @cancel="handleCurrencyCancel"
           />
         </v-dialog>
 
@@ -92,12 +105,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSupabase } from './composables/useSupabase'
 import { useExpenseForm } from './composables/useExpenseForm'
 import { useExpenseManagement } from './composables/useExpenseManagement'
 import { useCurrency } from './composables/useCurrency'
+import { useToast } from './composables/useToast'
 import AppHeader from './components/AppHeader.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
 import ExportExpenses from './components/ExportExpenses.vue'
@@ -111,7 +125,8 @@ import { type Expense } from './types'
 const { user, loading, signOut, initAuth, supabase } = useSupabase()
 const { refreshTrigger } = useExpenseManagement()
 const { showForm, editingExpense, openFormForNew, openFormForEdit } = useExpenseForm()
-const { mainCurrency, supportedCurrencies } = useCurrency()
+const { mainCurrency, supportedCurrencies, setMainCurrency, fetchExchangeRates } = useCurrency()
+const { showSuccess, showError, showWarning } = useToast()
 const router = useRouter()
 
 const showPasswordChange = ref(false)
@@ -119,6 +134,9 @@ const showImport = ref(false)
 const showExport = ref(false)
 const showCurrencySettings = ref(false)
 const currentView = ref<any>(null)
+const currencySettingsRef = ref<any>(null)
+const tempCurrency = ref(mainCurrency.value)
+const loadingCurrencySettings = ref(false)
 
 // Initialize auth on app load
 onMounted(async () => {
@@ -147,6 +165,69 @@ const handleFabClick = () => {
     }
   }
 }
+
+// Handle currency settings save
+const handleCurrencySave = async () => {
+  if (!currencySettingsRef.value) return
+  
+  try {
+    currencySettingsRef.value.saving = true
+    await setMainCurrency(tempCurrency.value)
+    
+    // Update main currency
+    mainCurrency.value = tempCurrency.value
+    
+    // Fetch new exchange rates for the new currency
+    try {
+      await fetchExchangeRates(tempCurrency.value)
+    } catch (error) {
+      console.error('Failed to fetch exchange rates:', error)
+      showWarning('汇率更新失败')
+    }
+    
+    // Close dialog after success
+    showCurrencySettings.value = false
+  } catch (error) {
+    console.error('Error saving currency:', error)
+    showError('保存货币设置失败')
+  } finally {
+    if (currencySettingsRef.value) {
+      currencySettingsRef.value.saving = false
+    }
+  }
+}
+
+// Handle currency settings cancel
+const handleCurrencyCancel = () => {
+  tempCurrency.value = mainCurrency.value
+  showCurrencySettings.value = false
+}
+
+// Watch for dialog open to sync temp currency and load preference
+watch(showCurrencySettings, async (isOpen) => {
+  if (isOpen) {
+    try {
+      loadingCurrencySettings.value = true
+      // Load current currency preference from database
+      const { loadUserCurrencyPreference } = useCurrency()
+      const currentCurrency = await loadUserCurrencyPreference()
+      mainCurrency.value = currentCurrency
+      tempCurrency.value = currentCurrency
+    } catch (error) {
+      console.error('Error loading currency preference:', error)
+      showError('加载货币设置失败')
+    } finally {
+      loadingCurrencySettings.value = false
+    }
+  }
+})
+
+// Also watch mainCurrency changes to keep tempCurrency in sync when dialog is closed
+watch(mainCurrency, (newValue) => {
+  if (!showCurrencySettings.value) {
+    tempCurrency.value = newValue
+  }
+})
 
 // Note: handleEditExpense is now handled through useExpenseForm composable
 </script>

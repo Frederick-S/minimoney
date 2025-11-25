@@ -13,7 +13,7 @@ const SUPPORTED_CURRENCIES: Currency[] = [
   { code: 'EUR', symbol: '€', name: 'Euro' },
   { code: 'GBP', symbol: '£', name: 'British Pound' },
   { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' }
+  { code: 'HKD', symbol: '$', name: 'Hong Kong Dollar' }
 ]
 
 export function useCurrency() {
