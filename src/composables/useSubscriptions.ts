@@ -76,16 +76,36 @@ export function useSubscriptions() {
       throw new Error('订阅名称不能为空')
     }
     
+    // Validate name length
+    if (subscription.name.trim().length > 100) {
+      throw new Error('订阅名称不能超过100个字符')
+    }
+    
     if (subscription.amount === undefined || subscription.amount === null) {
       throw new Error('金额不能为空')
+    }
+    
+    // Validate amount is a valid number
+    if (isNaN(subscription.amount) || !isFinite(subscription.amount)) {
+      throw new Error('金额必须是有效的数字')
     }
     
     if (subscription.amount <= 0) {
       throw new Error('金额必须大于0')
     }
     
+    // Validate amount is reasonable (not too large)
+    if (subscription.amount > 999999999.99) {
+      throw new Error('金额过大，请输入合理的金额')
+    }
+    
     if (!subscription.currency || subscription.currency.trim() === '') {
       throw new Error('货币不能为空')
+    }
+    
+    // Validate currency format (should be 3 uppercase letters)
+    if (!/^[A-Z]{3}$/.test(subscription.currency)) {
+      throw new Error('货币代码格式无效')
     }
     
     if (!subscription.billingFrequency) {
@@ -111,11 +131,25 @@ export function useSubscriptions() {
     // Validate end date is in the future (if provided)
     if (subscription.endDate) {
       const endDate = new Date(subscription.endDate)
+      
+      // Check if date is valid
+      if (isNaN(endDate.getTime())) {
+        throw new Error('结束日期格式无效')
+      }
+      
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       
       if (endDate < today) {
         throw new Error('结束日期必须是未来的日期')
+      }
+      
+      // Validate end date is not too far in the future (e.g., within 100 years)
+      const maxDate = new Date()
+      maxDate.setFullYear(maxDate.getFullYear() + 100)
+      
+      if (endDate > maxDate) {
+        throw new Error('结束日期过远，请输入合理的日期')
       }
     }
   }
@@ -141,12 +175,35 @@ export function useSubscriptions() {
 
       if (error) {
         console.error('Error loading subscriptions:', error)
-        throw new Error('加载订阅失败，请重试')
+        
+        // Provide more specific error messages based on error type
+        if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          throw new Error('网络连接失败，请检查网络后重试')
+        } else if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+          throw new Error('登录已过期，请重新登录')
+        } else {
+          throw new Error('加载订阅失败，请重试')
+        }
       }
 
       const convertedData = convertKeysToCamelCase<Subscription[]>(data || [])
       subscriptions.value = convertedData
       return convertedData
+    } catch (error) {
+      // Re-throw if it's already our custom error
+      if (error instanceof Error && error.message.includes('网络连接失败')) {
+        throw error
+      }
+      if (error instanceof Error && error.message.includes('登录已过期')) {
+        throw error
+      }
+      if (error instanceof Error && error.message.includes('加载订阅失败')) {
+        throw error
+      }
+      
+      // Handle unexpected errors
+      console.error('Unexpected error loading subscriptions:', error)
+      throw new Error('加载订阅时发生未知错误，请重试')
     } finally {
       loading.value = false
     }
@@ -188,7 +245,17 @@ export function useSubscriptions() {
 
       if (error) {
         console.error('Error creating subscription:', error)
-        throw new Error('创建订阅失败，请重试')
+        
+        // Provide specific error messages
+        if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          throw new Error('网络连接失败，无法创建订阅')
+        } else if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+          throw new Error('登录已过期，请重新登录')
+        } else if (error.message?.includes('duplicate') || error.code === '23505') {
+          throw new Error('订阅已存在')
+        } else {
+          throw new Error('创建订阅失败，请重试')
+        }
       }
 
       const createdSubscription = convertKeysToCamelCase<Subscription>(data)
@@ -242,7 +309,17 @@ export function useSubscriptions() {
 
       if (error) {
         console.error('Error updating subscription:', error)
-        throw new Error('更新订阅失败，请重试')
+        
+        // Provide specific error messages
+        if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          throw new Error('网络连接失败，无法更新订阅')
+        } else if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+          throw new Error('登录已过期，请重新登录')
+        } else if (error.code === 'PGRST116') {
+          throw new Error('订阅不存在或无权限修改')
+        } else {
+          throw new Error('更新订阅失败，请重试')
+        }
       }
 
       const updatedSubscription = convertKeysToCamelCase<Subscription>(data)
@@ -279,7 +356,15 @@ export function useSubscriptions() {
 
       if (error) {
         console.error('Error deleting subscription:', error)
-        throw new Error('删除订阅失败，请重试')
+        
+        // Provide specific error messages
+        if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          throw new Error('网络连接失败，无法删除订阅')
+        } else if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+          throw new Error('登录已过期，请重新登录')
+        } else {
+          throw new Error('删除订阅失败，请重试')
+        }
       }
 
       // Remove from local state

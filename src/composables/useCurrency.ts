@@ -86,61 +86,91 @@ export function useCurrency() {
   }
 
   /**
-   * Fetch exchange rates from API
+   * Fetch exchange rates from API with retry logic
+   * @param baseCurrency - The base currency for exchange rates
+   * @param retries - Number of retry attempts (default: 3)
+   * @param retryDelay - Delay between retries in ms (default: 1000)
    */
-  const fetchExchangeRates = async (baseCurrency: string = 'CNY'): Promise<void> => {
-    try {
-      const response = await fetch(
-        `https://api.exchangerate-api.com/v4/latest/${baseCurrency}`
-      )
+  const fetchExchangeRates = async (
+    baseCurrency: string = 'CNY',
+    retries: number = 3,
+    retryDelay: number = 1000
+  ): Promise<void> => {
+    let lastError: Error | null = null
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const rates = new Map<string, ExchangeRate>()
-      const timestamp = new Date().toISOString()
-
-      // Store rates for all supported currencies
-      SUPPORTED_CURRENCIES.forEach(currency => {
-        if (data.rates[currency.code]) {
-          const rate: ExchangeRate = {
-            from: baseCurrency,
-            to: currency.code,
-            rate: data.rates[currency.code],
-            lastUpdated: timestamp
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(
+          `https://api.exchangerate-api.com/v4/latest/${baseCurrency}`,
+          {
+            signal: AbortSignal.timeout(10000) // 10 second timeout
           }
-          rates.set(`${baseCurrency}_${currency.code}`, rate)
-        }
-      })
+        )
 
-      // Also store inverse rates for convenience
-      SUPPORTED_CURRENCIES.forEach(fromCurrency => {
-        SUPPORTED_CURRENCIES.forEach(toCurrency => {
-          if (fromCurrency.code !== toCurrency.code) {
-            const fromRate = data.rates[fromCurrency.code]
-            const toRate = data.rates[toCurrency.code]
-            
-            if (fromRate && toRate) {
-              const rate: ExchangeRate = {
-                from: fromCurrency.code,
-                to: toCurrency.code,
-                rate: toRate / fromRate,
-                lastUpdated: timestamp
-              }
-              rates.set(`${fromCurrency.code}_${toCurrency.code}`, rate)
+        if (!response.ok) {
+          throw new Error(`API请求失败: HTTP ${response.status}`)
+        }
+
+        const data = await response.json()
+        
+        if (!data.rates) {
+          throw new Error('API返回的数据格式无效')
+        }
+
+        const rates = new Map<string, ExchangeRate>()
+        const timestamp = new Date().toISOString()
+
+        // Store rates for all supported currencies
+        SUPPORTED_CURRENCIES.forEach(currency => {
+          if (data.rates[currency.code]) {
+            const rate: ExchangeRate = {
+              from: baseCurrency,
+              to: currency.code,
+              rate: data.rates[currency.code],
+              lastUpdated: timestamp
             }
+            rates.set(`${baseCurrency}_${currency.code}`, rate)
           }
         })
-      })
 
-      exchangeRates.value = rates
-      cacheRates(rates)
-    } catch (error) {
-      console.error('Error fetching exchange rates:', error)
-      throw error
+        // Also store inverse rates for convenience
+        SUPPORTED_CURRENCIES.forEach(fromCurrency => {
+          SUPPORTED_CURRENCIES.forEach(toCurrency => {
+            if (fromCurrency.code !== toCurrency.code) {
+              const fromRate = data.rates[fromCurrency.code]
+              const toRate = data.rates[toCurrency.code]
+              
+              if (fromRate && toRate) {
+                const rate: ExchangeRate = {
+                  from: fromCurrency.code,
+                  to: toCurrency.code,
+                  rate: toRate / fromRate,
+                  lastUpdated: timestamp
+                }
+                rates.set(`${fromCurrency.code}_${toCurrency.code}`, rate)
+              }
+            }
+          })
+        })
+
+        exchangeRates.value = rates
+        cacheRates(rates)
+        
+        // Success - exit retry loop
+        return
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('获取汇率失败')
+        console.error(`获取汇率失败 (尝试 ${attempt + 1}/${retries + 1}):`, error)
+
+        // If this is not the last attempt, wait before retrying
+        if (attempt < retries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)))
+        }
+      }
     }
+
+    // All retries failed
+    throw new Error(`获取汇率失败，已重试${retries}次: ${lastError?.message || '未知错误'}`)
   }
 
   /**
@@ -172,21 +202,46 @@ export function useCurrency() {
    * Convert amount from one currency to another
    */
   const convert = (amount: number, from: string, to: string): number => {
+    // Validate inputs
+    if (!amount || isNaN(amount) || !isFinite(amount)) {
+      console.warn('Invalid amount for conversion:', amount)
+      return 0
+    }
+    
+    if (!from || !to) {
+      console.warn('Invalid currency codes for conversion:', from, to)
+      return amount
+    }
+    
     if (from === to) return amount
 
-    const rate = getExchangeRate(from, to)
-    return amount * rate
+    try {
+      const rate = getExchangeRate(from, to)
+      const converted = amount * rate
+      
+      // Validate result
+      if (isNaN(converted) || !isFinite(converted)) {
+        console.warn('Invalid conversion result:', { amount, from, to, rate, converted })
+        return amount
+      }
+      
+      return converted
+    } catch (error) {
+      console.error('Error converting currency:', error)
+      return amount
+    }
   }
 
   /**
    * Load user's main currency preference from database
    */
   const loadUserCurrencyPreference = async (): Promise<string> => {
-    try {
-      if (!user.value?.id) {
-        return 'CNY' // Default currency
-      }
+    if (!user.value?.id) {
+      mainCurrency.value = 'CNY'
+      return 'CNY' // Default currency
+    }
 
+    try {
       const { data, error } = await supabase
         .from('user_preferences')
         .select('value')
@@ -198,15 +253,28 @@ export function useCurrency() {
       if (error) {
         if (error.code === 'PGRST116') {
           // No preference found, return default
+          mainCurrency.value = 'CNY'
           return 'CNY'
         }
-        throw error
+        console.error('Error loading currency preference:', error)
+        // Return default on error but don't throw
+        mainCurrency.value = 'CNY'
+        return 'CNY'
+      }
+
+      // Validate the loaded currency is supported
+      const isSupported = SUPPORTED_CURRENCIES.some(c => c.code === data.value)
+      if (!isSupported) {
+        console.warn(`Loaded unsupported currency ${data.value}, using default CNY`)
+        mainCurrency.value = 'CNY'
+        return 'CNY'
       }
 
       mainCurrency.value = data.value
       return data.value
     } catch (error) {
       console.error('Error loading currency preference:', error)
+      mainCurrency.value = 'CNY'
       return 'CNY'
     }
   }
@@ -215,11 +283,17 @@ export function useCurrency() {
    * Set user's main currency preference in database
    */
   const setMainCurrency = async (currency: string): Promise<void> => {
-    try {
-      if (!user.value?.id) {
-        throw new Error('User not authenticated')
-      }
+    if (!user.value?.id) {
+      throw new Error('用户未登录，无法保存货币设置')
+    }
 
+    // Validate currency is supported
+    const isSupported = SUPPORTED_CURRENCIES.some(c => c.code === currency)
+    if (!isSupported) {
+      throw new Error(`不支持的货币: ${currency}`)
+    }
+
+    try {
       const { error } = await supabase
         .from('user_preferences')
         .upsert({
@@ -231,12 +305,18 @@ export function useCurrency() {
           onConflict: 'user_id,category,key'
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Database error setting main currency:', error)
+        throw new Error('保存货币设置失败，请重试')
+      }
 
       mainCurrency.value = currency
     } catch (error) {
+      if (error instanceof Error && error.message.includes('保存货币设置失败')) {
+        throw error
+      }
       console.error('Error setting main currency:', error)
-      throw error
+      throw new Error('保存货币设置失败，请检查网络连接')
     }
   }
 

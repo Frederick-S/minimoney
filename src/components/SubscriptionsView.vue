@@ -10,11 +10,20 @@
 
     <!-- Error State -->
     <div v-else-if="errorMessage" class="text-center py-8">
+      <v-icon size="64" color="error" class="mb-4">
+        mdi-alert-circle-outline
+      </v-icon>
       <v-alert type="error" variant="tonal" class="mb-4">
-        {{ errorMessage }}
+        <div class="text-h6 mb-2">加载失败</div>
+        <div class="text-body-1">{{ errorMessage }}</div>
       </v-alert>
-      <v-btn color="primary" @click="retryLoad">
-        重试
+      <v-btn 
+        color="primary" 
+        size="large"
+        prepend-icon="mdi-refresh"
+        @click="retryLoad"
+      >
+        重新加载
       </v-btn>
     </div>
 
@@ -33,6 +42,32 @@
               :currencies="supportedCurrencies"
               @update:model-value="handleCurrencyChange"
             />
+            
+            <!-- Exchange Rate Status and Retry -->
+            <v-card class="mt-4" variant="outlined">
+              <v-card-text>
+                <div class="d-flex align-center justify-space-between">
+                  <div>
+                    <div class="text-body-2 text-medium-emphasis">
+                      汇率状态
+                    </div>
+                    <div class="text-body-1">
+                      {{ ratesLastUpdated ? `最后更新: ${formatDateTime(ratesLastUpdated)}` : '未加载' }}
+                    </div>
+                  </div>
+                  <v-btn
+                    color="primary"
+                    variant="outlined"
+                    size="small"
+                    :loading="fetchingRates"
+                    @click="handleRefreshRates"
+                  >
+                    <v-icon left>mdi-refresh</v-icon>
+                    刷新汇率
+                  </v-btn>
+                </div>
+              </v-card-text>
+            </v-card>
           </v-expansion-panel-text>
         </v-expansion-panel>
       </v-expansion-panels>
@@ -118,6 +153,7 @@ const {
 const {
   mainCurrency,
   supportedCurrencies,
+  ratesLastUpdated,
   loadUserCurrencyPreference,
   setMainCurrency,
   fetchExchangeRates,
@@ -143,6 +179,7 @@ const showDeleteDialog = ref(false)
 const deletingSubscription = ref<Subscription | null>(null)
 const deleting = ref(false)
 const settingsPanel = ref<number | undefined>(undefined)
+const fetchingRates = ref(false)
 
 /**
  * Convert subscriptions to display format with currency conversion
@@ -183,7 +220,7 @@ const initializeData = async () => {
     initialLoading.value = true
     errorMessage.value = null
 
-    // Load currency preference first
+    // Load currency preference first (this should not fail)
     await loadUserCurrencyPreference()
 
     // Try to load cached exchange rates
@@ -195,15 +232,22 @@ const initializeData = async () => {
         await fetchExchangeRates(mainCurrency.value)
       } catch (error) {
         console.error('Failed to fetch exchange rates:', error)
-        showWarning('无法获取汇率，将仅显示原始货币')
+        const errorMsg = error instanceof Error ? error.message : '无法获取汇率'
+        showWarning(`${errorMsg}，将仅显示原始货币`)
       }
     }
 
-    // Load subscriptions
-    await loadSubscriptions()
+    // Load subscriptions - this is critical, so we throw on failure
+    try {
+      await loadSubscriptions()
+    } catch (error) {
+      console.error('Failed to load subscriptions:', error)
+      const errorMsg = error instanceof Error ? error.message : '加载订阅失败'
+      throw new Error(errorMsg)
+    }
   } catch (error) {
     console.error('Error initializing subscriptions view:', error)
-    errorMessage.value = '加载订阅数据失败，请重试'
+    errorMessage.value = error instanceof Error ? error.message : '加载订阅数据失败，请重试'
   } finally {
     initialLoading.value = false
   }
@@ -217,24 +261,67 @@ const retryLoad = async () => {
 }
 
 /**
+ * Format date time for display
+ */
+const formatDateTime = (isoString: string): string => {
+  try {
+    const date = new Date(isoString)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return '未知'
+  }
+}
+
+/**
+ * Handle manual refresh of exchange rates
+ */
+const handleRefreshRates = async () => {
+  try {
+    fetchingRates.value = true
+    await fetchExchangeRates(mainCurrency.value)
+    showSuccess('汇率已更新')
+  } catch (error) {
+    console.error('Failed to refresh exchange rates:', error)
+    const errorMsg = error instanceof Error ? error.message : '刷新汇率失败'
+    showError(errorMsg)
+  } finally {
+    fetchingRates.value = false
+  }
+}
+
+/**
  * Handle currency change
  */
 const handleCurrencyChange = async (newCurrency: string) => {
   try {
+    loading.value = true
     await setMainCurrency(newCurrency)
     
     // Fetch new exchange rates for the new base currency
     try {
       await fetchExchangeRates(newCurrency)
+      showSuccess('主货币已更新')
     } catch (error) {
       console.error('Failed to fetch exchange rates:', error)
-      showWarning('无法获取汇率，将仅显示原始货币')
+      const errorMsg = error instanceof Error ? error.message : '无法获取汇率'
+      showWarning(`${errorMsg}，将仅显示原始货币`)
+      // Still show success for currency change even if rates fail
+      showSuccess('主货币已更新（汇率获取失败）')
     }
-    
-    showSuccess('主货币已更新')
   } catch (error) {
     console.error('Error changing currency:', error)
-    showError('更新货币设置失败')
+    const errorMsg = error instanceof Error ? error.message : '更新货币设置失败'
+    showError(errorMsg)
+    // Revert currency on failure
+    await loadUserCurrencyPreference()
+  } finally {
+    loading.value = false
   }
 }
 
@@ -264,7 +351,9 @@ const handleSave = async (subscriptionData: Omit<Subscription, 'id' | 'userId' |
     showForm.value = false
   } catch (error) {
     console.error('Error creating subscription:', error)
-    showError(error instanceof Error ? error.message : '创建订阅失败')
+    const errorMsg = error instanceof Error ? error.message : '创建订阅失败，请重试'
+    showError(errorMsg)
+    // Don't close form on error so user can retry
   }
 }
 
@@ -278,7 +367,9 @@ const handleUpdate = async (subscription: Subscription) => {
     showForm.value = false
   } catch (error) {
     console.error('Error updating subscription:', error)
-    showError(error instanceof Error ? error.message : '更新订阅失败')
+    const errorMsg = error instanceof Error ? error.message : '更新订阅失败，请重试'
+    showError(errorMsg)
+    // Don't close form on error so user can retry
   }
 }
 

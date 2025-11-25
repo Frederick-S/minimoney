@@ -118,34 +118,61 @@ const emit = defineEmits<{
  * Format amount with currency symbol
  */
 const formatAmount = (amount: number, currency: string): string => {
-  const currencySymbols: Record<string, string> = {
-    'CNY': '¥',
-    'USD': '$',
-    'EUR': '€',
-    'GBP': '£',
-    'JPY': '¥',
-    'HKD': 'HK$'
+  try {
+    // Validate inputs
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return '¥0.00'
+    }
+    
+    const currencySymbols: Record<string, string> = {
+      'CNY': '¥',
+      'USD': '$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'HKD': 'HK$'
+    }
+    
+    const symbol = currencySymbols[currency] || currency || '¥'
+    
+    const formatted = new Intl.NumberFormat('zh-CN', {
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount)
+    
+    return `${symbol}${formatted}`
+  } catch (error) {
+    console.error('Error formatting amount:', error)
+    return `${currency || '¥'}${amount || 0}`
   }
-  
-  const symbol = currencySymbols[currency] || currency
-  
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'decimal',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount).replace(/^/, symbol)
 }
 
 /**
  * Format date for display
  */
 const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  })
+  try {
+    if (!dateString) {
+      return '未知日期'
+    }
+    
+    const date = new Date(dateString)
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return '无效日期'
+    }
+    
+    return date.toLocaleDateString('zh-CN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return '日期格式错误'
+  }
 }
 
 /**

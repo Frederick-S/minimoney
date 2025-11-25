@@ -110,7 +110,8 @@
           color="primary"
           variant="flat"
           @click="handleSave"
-          :disabled="!isFormValid"
+          :disabled="!isFormValid || saving"
+          :loading="saving"
           data-testid="save-button"
         >
           {{ props.subscription ? '更新' : '保存' }}
@@ -132,6 +133,7 @@ const { supportedCurrencies } = useCurrency()
 
 const showForm = ref(props.modelValue)
 const formRef = ref()
+const saving = ref(false)
 
 // Form fields
 const name = ref('')
@@ -281,29 +283,39 @@ const handleSave = async () => {
   // Validate form
   if (formRef.value) {
     const { valid } = await formRef.value.validate()
-    if (!valid) return
+    if (!valid) {
+      return
+    }
   }
   
-  if (!isFormValid.value) return
-  
-  const subscriptionData = {
-    name: name.value.trim(),
-    amount: parseFloat(amount.value),
-    currency: currency.value,
-    billingFrequency: billingFrequency.value,
-    isAutoRenew: renewalType.value === 'auto-renew',
-    endDate: renewalType.value === 'fixed-end' ? endDate.value : undefined,
-    nextBillingDate: calculateNextBillingDate()
+  if (!isFormValid.value) {
+    return
   }
   
-  if (props.subscription) {
-    // Emit update event with the subscription id
-    emit('update', { ...subscriptionData, id: props.subscription.id, userId: props.subscription.userId, createdAt: props.subscription.createdAt, updatedAt: props.subscription.updatedAt })
-  } else {
-    // Emit save event for new subscription
-    emit('save', subscriptionData)
+  try {
+    const subscriptionData = {
+      name: name.value.trim(),
+      amount: parseFloat(amount.value),
+      currency: currency.value,
+      billingFrequency: billingFrequency.value,
+      isAutoRenew: renewalType.value === 'auto-renew',
+      endDate: renewalType.value === 'fixed-end' ? endDate.value : undefined,
+      nextBillingDate: calculateNextBillingDate()
+    }
+    
+    if (props.subscription) {
+      // Emit update event with the subscription id
+      emit('update', { ...subscriptionData, id: props.subscription.id, userId: props.subscription.userId, createdAt: props.subscription.createdAt, updatedAt: props.subscription.updatedAt })
+    } else {
+      // Emit save event for new subscription
+      emit('save', subscriptionData)
+    }
+    
+    // Note: Don't close form here - let parent handle it after successful save
+    // This allows parent to show errors if save fails
+  } catch (error) {
+    console.error('Error preparing subscription data:', error)
+    // Form validation should prevent this, but handle gracefully
   }
-  
-  closeForm()
 }
 </script>
