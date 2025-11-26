@@ -33,8 +33,8 @@
           />
         </div>
 
-        <!-- Floating Action Button (only show on home and subscriptions tabs if authenticated) -->
-        <div v-if="user && ($route.name === 'Home' || $route.name === 'Subscriptions')" class="fixed-fab">
+        <!-- Floating Action Button (only show on home tab if authenticated) -->
+        <div v-if="user && $route.name === 'Home'" class="fixed-fab">
           <v-fab
             location="bottom center"
             size="56"
@@ -156,14 +156,7 @@ const handleLogout = async () => {
 }
 
 const handleFabClick = () => {
-  if (router.currentRoute.value.name === 'Home') {
-    openFormForNew()
-  } else if (router.currentRoute.value.name === 'Subscriptions') {
-    // Call handleAdd method on SubscriptionsView component
-    if (currentView.value?.handleAdd) {
-      currentView.value.handleAdd()
-    }
-  }
+  openFormForNew()
 }
 
 // Handle currency settings save

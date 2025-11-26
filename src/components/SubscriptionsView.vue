@@ -66,6 +66,17 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- Floating Action Button for adding subscriptions -->
+      <div class="fixed-fab">
+        <v-fab
+          location="bottom center"
+          size="56"
+          color="primary"
+          icon="mdi-plus"
+          @click="handleAdd"
+        />
+      </div>
     </template>
   </div>
 </template>
@@ -301,5 +312,11 @@ defineExpose({
 </script>
 
 <style scoped>
-/* Styles if needed */
+.fixed-fab {
+  position: fixed;
+  bottom: 72px; /* 56px (bottom nav) + 16px spacing */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+}
 </style>
