@@ -9,7 +9,7 @@
           </div>
           
           <!-- Amount Display -->
-          <div class="d-flex align-center ga-2 mb-2">
+          <div class="d-flex align-center ga-2 mb-1">
             <div class="text-h5 font-weight-bold text-primary">
               {{ formatAmount(subscription.displayAmount, subscription.displayCurrency) }}
             </div>
@@ -22,31 +22,16 @@
             >
               {{ subscription.billingFrequency === 'monthly' ? '每月' : '每年' }}
             </v-chip>
-          </div>
-          
-          <!-- Original Currency Display (if different) -->
-          <div 
-            v-if="subscription.originalCurrency !== subscription.displayCurrency"
-            class="text-body-2 text-medium-emphasis mb-2"
-          >
-            原价: {{ formatAmount(subscription.originalAmount, subscription.originalCurrency) }}
-          </div>
-          
-          <!-- Renewal Status and End Date -->
-          <div class="d-flex align-center ga-2 mb-2">
-            <!-- Auto-renew indicator -->
-            <div v-if="subscription.isAutoRenew" class="d-flex align-center ga-1">
-              <v-icon size="small" color="success">mdi-sync</v-icon>
-              <span class="text-body-2 text-success">自动续订</span>
-            </div>
             
-            <!-- End date display -->
-            <div v-else class="d-flex align-center ga-1">
-              <v-icon size="small" color="warning">mdi-calendar-end</v-icon>
-              <span class="text-body-2">
-                结束日期: {{ formatDate(subscription.endDate!) }}
-              </span>
-            </div>
+            <!-- Auto-renew Badge -->
+            <v-chip
+              v-if="subscription.isAutoRenew"
+              size="small"
+              color="success"
+              variant="flat"
+            >
+              自动续订
+            </v-chip>
             
             <!-- Warning indicator for subscriptions ending soon -->
             <v-chip
@@ -71,17 +56,33 @@
             </v-chip>
           </div>
           
-          <!-- Next Billing Date (for active subscriptions) -->
+          <!-- Original Currency Display (if different) -->
           <div 
-            v-if="!subscription.isExpired"
+            v-if="subscription.originalCurrency !== subscription.displayCurrency"
+            class="text-body-2 text-medium-emphasis mb-2"
+          >
+            原价: {{ formatAmount(subscription.originalAmount, subscription.originalCurrency) }}
+          </div>
+          
+          <!-- End Date (for non-auto-renew subscriptions) -->
+          <div v-if="!subscription.isAutoRenew" class="d-flex align-center ga-1 mb-2">
+            <v-icon size="small" color="warning">mdi-calendar-end</v-icon>
+            <span class="text-body-2">
+              结束日期: {{ formatDate(subscription.endDate!) }}
+            </span>
+          </div>
+          
+          <!-- Next Billing/Renewal Date (for active subscriptions) -->
+          <div 
+            v-if="!subscription.isExpired && shouldShowNextBilling"
             class="text-body-2 text-medium-emphasis"
           >
-            下次扣费: {{ formatDate(subscription.nextBillingDate) }}
+            {{ subscription.isAutoRenew ? '下次续订' : '下次扣费' }}: {{ formatDate(subscription.nextBillingDate) }}
           </div>
         </div>
         
         <!-- Action Buttons -->
-        <div class="ml-3 d-flex ga-2">
+        <div class="d-flex" style="gap: 0;">
           <v-btn
             icon="mdi-pencil"
             size="small"
@@ -105,6 +106,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { SubscriptionCardProps } from '../types'
 
 const props = defineProps<SubscriptionCardProps>()
@@ -113,6 +115,25 @@ const emit = defineEmits<{
   edit: [subscription: typeof props.subscription]
   delete: [id: string]
 }>()
+
+/**
+ * Check if we should show the next billing date
+ * Don't show if subscription has an end date before the next billing date
+ */
+const shouldShowNextBilling = computed(() => {
+  const { subscription } = props
+  
+  // If no end date (auto-renew), always show next billing
+  if (!subscription.endDate) {
+    return true
+  }
+  
+  // If has end date, only show if next billing is before end date
+  const endDate = new Date(subscription.endDate)
+  const nextBilling = new Date(subscription.nextBillingDate)
+  
+  return nextBilling <= endDate
+})
 
 /**
  * Format amount with currency symbol

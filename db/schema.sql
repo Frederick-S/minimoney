@@ -240,6 +240,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     currency TEXT NOT NULL,
     billing_frequency TEXT NOT NULL CHECK (billing_frequency IN ('monthly', 'yearly')),
     is_auto_renew BOOLEAN NOT NULL DEFAULT TRUE,
+    start_date DATE NOT NULL DEFAULT CURRENT_DATE,
     end_date DATE,
     next_billing_date DATE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
@@ -249,7 +250,9 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     CHECK (
         (is_auto_renew = TRUE AND end_date IS NULL) OR
         (is_auto_renew = FALSE AND end_date IS NOT NULL)
-    )
+    ),
+    -- Ensure end_date is after start_date
+    CHECK (end_date IS NULL OR end_date >= start_date)
 );
 
 -- User preferences table for storing user-specific settings
@@ -268,6 +271,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 
 -- Create indexes for subscriptions
 CREATE INDEX IF NOT EXISTS subscriptions_user_id_idx ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS subscriptions_start_date_idx ON subscriptions(start_date);
 CREATE INDEX IF NOT EXISTS subscriptions_next_billing_date_idx ON subscriptions(next_billing_date);
 CREATE INDEX IF NOT EXISTS subscriptions_end_date_idx ON subscriptions(end_date);
 

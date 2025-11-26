@@ -239,6 +239,7 @@ export interface Subscription {
   currency: string
   billingFrequency: 'monthly' | 'yearly'
   isAutoRenew: boolean
+  startDate: string  // ISO date string
   endDate?: string  // ISO date string, undefined if auto-renew
   nextBillingDate: string  // ISO date string
   createdAt: string

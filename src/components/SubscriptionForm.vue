@@ -70,6 +70,17 @@
             </v-radio-group>
           </div>
           
+          <v-text-field
+            v-model="startDate"
+            label="开始日期"
+            type="date"
+            variant="outlined"
+            :rules="startDateRules"
+            required
+            class="mb-4"
+            data-testid="start-date-field"
+          />
+          
           <div class="mb-4">
             <label class="text-subtitle-2 mb-2 d-block">续订类型</label>
             <v-radio-group
@@ -141,6 +152,7 @@ const amount = ref('')
 const currency = ref(props.mainCurrency || 'CNY')
 const billingFrequency = ref<'monthly' | 'yearly'>('monthly')
 const renewalType = ref<'auto-renew' | 'fixed-end'>('auto-renew')
+const startDate = ref(new Date().toISOString().split('T')[0])
 const endDate = ref('')
 
 // Currency items for select dropdown
@@ -173,6 +185,10 @@ const billingFrequencyRules = [
   (v: string) => !!v || '请选择账单周期'
 ]
 
+const startDateRules = [
+  (v: string) => !!v || '请选择开始日期'
+]
+
 const endDateRules = computed(() => {
   if (renewalType.value === 'auto-renew') {
     return []
@@ -182,9 +198,9 @@ const endDateRules = computed(() => {
     (v: string) => {
       if (!v) return true
       const selectedDate = new Date(v)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      return selectedDate > today || '结束日期必须是未来的日期'
+      const startDateValue = new Date(startDate.value)
+      startDateValue.setHours(0, 0, 0, 0)
+      return selectedDate > startDateValue || '结束日期必须晚于开始日期'
     }
   ]
 })
@@ -195,14 +211,15 @@ const isFormValid = computed(() => {
   const hasValidAmount = amount.value && parseFloat(amount.value) > 0
   const hasCurrency = !!currency.value
   const hasBillingFrequency = !!billingFrequency.value
+  const hasStartDate = !!startDate.value
   
   if (renewalType.value === 'fixed-end') {
     const hasEndDate = !!endDate.value
-    const isEndDateFuture = endDate.value ? new Date(endDate.value) > new Date() : false
-    return hasName && hasValidAmount && hasCurrency && hasBillingFrequency && hasEndDate && isEndDateFuture
+    const isEndDateValid = endDate.value && startDate.value ? new Date(endDate.value) > new Date(startDate.value) : false
+    return hasName && hasValidAmount && hasCurrency && hasBillingFrequency && hasStartDate && hasEndDate && isEndDateValid
   }
   
-  return hasName && hasValidAmount && hasCurrency && hasBillingFrequency
+  return hasName && hasValidAmount && hasCurrency && hasBillingFrequency && hasStartDate
 })
 
 // Initialize form data based on props
@@ -213,6 +230,7 @@ const initializeForm = () => {
     currency.value = props.subscription.currency
     billingFrequency.value = props.subscription.billingFrequency
     renewalType.value = props.subscription.isAutoRenew ? 'auto-renew' : 'fixed-end'
+    startDate.value = props.subscription.startDate
     endDate.value = props.subscription.endDate || ''
   } else {
     // New subscription - reset to defaults
@@ -221,6 +239,7 @@ const initializeForm = () => {
     currency.value = props.mainCurrency || 'CNY'
     billingFrequency.value = 'monthly'
     renewalType.value = 'auto-renew'
+    startDate.value = new Date().toISOString().split('T')[0]
     endDate.value = ''
   }
 }
@@ -263,12 +282,13 @@ const resetForm = () => {
   currency.value = props.mainCurrency || 'CNY'
   billingFrequency.value = 'monthly'
   renewalType.value = 'auto-renew'
+  startDate.value = new Date().toISOString().split('T')[0]
   endDate.value = ''
 }
 
 const calculateNextBillingDate = (): string => {
-  const today = new Date()
-  const nextBilling = new Date(today)
+  const start = new Date(startDate.value)
+  const nextBilling = new Date(start)
   
   if (billingFrequency.value === 'monthly') {
     nextBilling.setMonth(nextBilling.getMonth() + 1)
@@ -299,6 +319,7 @@ const handleSave = async () => {
       currency: currency.value,
       billingFrequency: billingFrequency.value,
       isAutoRenew: renewalType.value === 'auto-renew',
+      startDate: startDate.value,
       endDate: renewalType.value === 'fixed-end' ? endDate.value : undefined,
       nextBillingDate: calculateNextBillingDate()
     }

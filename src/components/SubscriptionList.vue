@@ -17,7 +17,7 @@
       <div class="text-h1 mb-4">📱</div>
       <v-card-title class="justify-center">还没有订阅记录</v-card-title>
       <v-card-subtitle class="text-center mb-6">
-        点击右下角的 + 按钮添加第一个订阅
+        点击底部中央的 + 按钮添加第一个订阅
       </v-card-subtitle>
     </div>
 
