@@ -135,6 +135,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useCurrency } from '../composables/useCurrency'
+import { getTodayDate, formatDateToLocal } from '../utils/dateUtils'
 import type { Subscription, SubscriptionFormProps, SubscriptionFormEmits } from '../types'
 
 const props = defineProps<SubscriptionFormProps>()
@@ -152,7 +153,7 @@ const amount = ref('')
 const currency = ref(props.mainCurrency || 'CNY')
 const billingFrequency = ref<'monthly' | 'yearly'>('monthly')
 const renewalType = ref<'auto-renew' | 'fixed-end'>('auto-renew')
-const startDate = ref(new Date().toISOString().split('T')[0])
+const startDate = ref(getTodayDate())
 const endDate = ref('')
 
 // Currency items for select dropdown
@@ -230,8 +231,8 @@ const initializeForm = () => {
     currency.value = props.subscription.currency
     billingFrequency.value = props.subscription.billingFrequency
     renewalType.value = props.subscription.isAutoRenew ? 'auto-renew' : 'fixed-end'
-    startDate.value = props.subscription.startDate
-    endDate.value = props.subscription.endDate || ''
+    startDate.value = formatDateToLocal(props.subscription.startDate)
+    endDate.value = props.subscription.endDate ? formatDateToLocal(props.subscription.endDate) : ''
   } else {
     // New subscription - reset to defaults
     name.value = ''
@@ -239,7 +240,7 @@ const initializeForm = () => {
     currency.value = props.mainCurrency || 'CNY'
     billingFrequency.value = 'monthly'
     renewalType.value = 'auto-renew'
-    startDate.value = new Date().toISOString().split('T')[0]
+    startDate.value = getTodayDate()
     endDate.value = ''
   }
 }
@@ -282,7 +283,7 @@ const resetForm = () => {
   currency.value = props.mainCurrency || 'CNY'
   billingFrequency.value = 'monthly'
   renewalType.value = 'auto-renew'
-  startDate.value = new Date().toISOString().split('T')[0]
+  startDate.value = getTodayDate()
   endDate.value = ''
 }
 
