@@ -9,7 +9,7 @@
         <div class="text-body-2 text-medium-emphasis mb-1">
           每月总费用
         </div>
-        <div class="text-h5 font-weight-bold text-primary">
+        <div class="text-h6 font-weight-bold text-primary">
           {{ formatAmount(summary.totalMonthly, summary.currency) }}
         </div>
       </div>
@@ -19,7 +19,7 @@
         <div class="text-body-2 text-medium-emphasis mb-1">
           每年总费用
         </div>
-        <div class="text-h5 font-weight-bold text-secondary">
+        <div class="text-h6 font-weight-bold text-secondary">
           {{ formatAmount(summary.totalYearly, summary.currency) }}
         </div>
       </div>
@@ -29,7 +29,7 @@
         <div class="text-body-2 text-medium-emphasis mb-1">
           活跃订阅数
         </div>
-        <div class="text-h5 font-weight-bold">
+        <div class="text-h6 font-weight-bold">
           {{ summary.activeCount }}
         </div>
       </div>
@@ -39,7 +39,7 @@
         <div class="text-body-2 text-medium-emphasis mb-1">
           显示货币
         </div>
-        <div class="text-h5 font-weight-bold">
+        <div class="text-h6 font-weight-bold">
           {{ getCurrencyName(summary.currency) }}
         </div>
       </div>
