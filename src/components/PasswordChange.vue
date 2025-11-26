@@ -55,6 +55,7 @@
           color="primary"
           variant="flat"
           :loading="loading"
+          :disabled="!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword"
           @click="handleSubmit"
         >
           确认修改
