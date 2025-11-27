@@ -27,7 +27,7 @@
     <!-- Main Content -->
     <template v-else>
       <!-- Subscription Summary -->
-      <SubscriptionSummary :summary="summary" />
+      <SubscriptionSummary :summary="summary" :subscriptions="displaySubscriptions" />
 
       <!-- Subscription List -->
       <SubscriptionList

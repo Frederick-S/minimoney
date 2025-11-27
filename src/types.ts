@@ -348,6 +348,7 @@ export interface SubscriptionCardProps {
  */
 export interface SubscriptionSummaryProps {
   summary: SubscriptionSummary
+  subscriptions: SubscriptionDisplay[]
 }
 
 /**
