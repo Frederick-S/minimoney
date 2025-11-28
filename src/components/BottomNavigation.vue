@@ -16,6 +16,14 @@
     </v-btn>
     
     <v-btn 
+      value="subscriptions"
+      @click="() => $router.push('/subscriptions')"
+    >
+      <v-icon>mdi-sync</v-icon>
+      <span>订阅</span>
+    </v-btn>
+    
+    <v-btn 
       value="charts"
       @click="() => $router.push('/charts')"
     >
@@ -38,6 +46,8 @@ const getTabFromRoute = (routeName: string | symbol | null | undefined) => {
       return 'home'
     case 'Charts':
       return 'charts'
+    case 'Subscriptions':
+      return 'subscriptions'
     default:
       return 'home'
   }

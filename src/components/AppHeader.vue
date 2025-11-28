@@ -32,6 +32,12 @@
             <v-list-item-title>{{ user?.email }}</v-list-item-title>
           </v-list-item>
           <v-divider />
+          <v-list-item @click="$emit('currencySettings')">
+            <v-list-item-title>
+              <v-icon start>mdi-currency-usd</v-icon>
+              货币设置
+            </v-list-item-title>
+          </v-list-item>
           <v-list-item @click="$emit('changePassword')">
             <v-list-item-title>
               <v-icon start>mdi-lock-reset</v-icon>
@@ -60,6 +66,7 @@ defineProps<{
 defineEmits<{
   logout: []
   changePassword: []
+  currencySettings: []
   import: []
   export: []
 }>()

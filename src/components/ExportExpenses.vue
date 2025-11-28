@@ -1,11 +1,11 @@
 <template>
-  <v-dialog v-model="dialogModel" max-width="500px" persistent>
+  <v-dialog v-model="dialogModel" max-width="500px" persistent :fullscreen="$vuetify.display.mobile">
     <v-card>
-      <v-card-title class="text-h5 pa-4">
+      <v-card-title class="text-h6 pa-4">
         导出账单
       </v-card-title>
 
-      <v-card-text class="pb-0">
+      <v-card-text class="pa-4">
         <v-radio-group v-model="exportType" class="mb-4">
           <v-radio label="导出全部账单" value="all" />
           <v-radio label="按时间范围导出" value="range" />
@@ -39,7 +39,7 @@
       <v-card-actions class="pa-4">
         <v-spacer />
         <v-btn
-          variant="text"
+          variant="outlined"
           @click="handleClose"
         >
           取消

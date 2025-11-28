@@ -48,7 +48,7 @@
                   {{ expense.note }}
                 </div>
               </div>
-              <div class="ml-3 d-flex ga-2">
+              <div class="d-flex" style="gap: 0;">
                 <v-btn
                   icon="mdi-pencil"
                   size="small"
