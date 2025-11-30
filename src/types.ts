@@ -11,6 +11,7 @@ export interface Expense {
   date: string
   note?: string
   userId?: string
+  subscriptionId?: string  // UUID reference to subscriptions table (null for manual expenses)
   createdAt?: string
   updatedAt?: string
 }

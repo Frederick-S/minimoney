@@ -203,6 +203,7 @@ CREATE OR REPLACE FUNCTION get_period_expenses(
   date DATE,
   note TEXT,
   user_id UUID,
+  subscription_id UUID,
   created_at TIMESTAMPTZ
 ) AS $$
 BEGIN
@@ -217,6 +218,7 @@ BEGIN
     e.date,
     e.note,
     e.user_id,
+    e.subscription_id,
     e.created_at
   FROM expenses e
   JOIN categories c ON e.category_id = c.id
@@ -457,4 +459,144 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+
+-- ============================================================================
+-- Subscription Expense Management Functions
+-- ============================================================================
+
+-- Function to ensure subscription category exists for a user
+CREATE OR REPLACE FUNCTION ensure_subscription_category(p_user_id UUID)
+RETURNS UUID AS $
+DECLARE
+    v_category_id UUID;
+BEGIN
+    -- Check if subscription category already exists for this user
+    SELECT id INTO v_category_id
+    FROM categories
+    WHERE user_id = p_user_id 
+      AND name = 'subscription'
+    LIMIT 1;
+    
+    -- If not found, create it
+    IF v_category_id IS NULL THEN
+        INSERT INTO categories (
+            user_id,
+            parent_id,
+            name,
+            display_name,
+            color,
+            chart_color,
+            icon,
+            is_default,
+            sort_order,
+            level
+        ) VALUES (
+            p_user_id,
+            NULL,
+            'subscription',
+            '订阅',
+            '#9C27B0',
+            '#9C27B0',
+            'mdi-sync',
+            TRUE,
+            999,  -- Sort at end
+            0
+        )
+        RETURNING id INTO v_category_id;
+        
+        RAISE NOTICE 'Created subscription category for user %', p_user_id;
+    END IF;
+    
+    RETURN v_category_id;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to create subscription category for all existing users
+CREATE OR REPLACE FUNCTION create_subscription_category_for_all_users()
+RETURNS TABLE(user_id UUID, category_id UUID, created BOOLEAN) AS $
+DECLARE
+    v_user RECORD;
+    v_category_id UUID;
+    v_created BOOLEAN;
+BEGIN
+    FOR v_user IN 
+        SELECT DISTINCT u.id as user_id
+        FROM auth.users u
+        WHERE EXISTS (
+            SELECT 1 FROM categories c WHERE c.user_id = u.id
+        )
+    LOOP
+        -- Check if subscription category exists
+        SELECT id INTO v_category_id
+        FROM categories
+        WHERE categories.user_id = v_user.user_id 
+          AND name = 'subscription'
+        LIMIT 1;
+        
+        IF v_category_id IS NULL THEN
+            -- Create it
+            v_category_id := ensure_subscription_category(v_user.user_id);
+            v_created := TRUE;
+        ELSE
+            v_created := FALSE;
+        END IF;
+        
+        RETURN QUERY SELECT v_user.user_id, v_category_id, v_created;
+    END LOOP;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get subscription category ID for a user (creates if needed)
+CREATE OR REPLACE FUNCTION get_subscription_category_id(p_user_id UUID)
+RETURNS UUID AS $
+BEGIN
+    RETURN ensure_subscription_category(p_user_id);
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get expenses linked to a subscription
+CREATE OR REPLACE FUNCTION get_subscription_expenses(p_subscription_id UUID)
+RETURNS TABLE(
+    id UUID,
+    amount NUMERIC,
+    category_id UUID,
+    date DATE,
+    note TEXT,
+    user_id UUID,
+    subscription_id UUID,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ
+) AS $
+BEGIN
+    RETURN QUERY
+    SELECT 
+        e.id,
+        e.amount,
+        e.category_id,
+        e.date,
+        e.note,
+        e.user_id,
+        e.subscription_id,
+        e.created_at,
+        e.updated_at
+    FROM expenses e
+    WHERE e.subscription_id = p_subscription_id
+    ORDER BY e.date DESC;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to count expenses linked to a subscription
+CREATE OR REPLACE FUNCTION count_subscription_expenses(p_subscription_id UUID)
+RETURNS INTEGER AS $
+DECLARE
+    v_count INTEGER;
+BEGIN
+    SELECT COUNT(*)::INTEGER INTO v_count
+    FROM expenses
+    WHERE subscription_id = p_subscription_id;
+    
+    RETURN v_count;
+END;
+$ LANGUAGE plpgsql SECURITY DEFINER;
 

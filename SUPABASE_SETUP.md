@@ -14,7 +14,7 @@
    1. Copy and paste the contents of `db/schema.sql` to create tables and functions
    2. Copy and paste the contents of `db/system-categories-seed.sql` to populate default categories
    3. Copy and paste the contents of `db/rpc.sql` to create RPC functions
-4. Verify tables are created: `system_categories`, `categories`, and `expenses`
+4. Verify tables are created: `system_categories`, `categories`, `expenses`, `subscriptions`, `subscription_billing_logs`, and `subscription_audit_log`
 
 ## 3. Configure Environment Variables
 

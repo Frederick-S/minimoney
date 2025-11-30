@@ -52,8 +52,12 @@ CREATE TABLE IF NOT EXISTS expenses (
     category_id UUID REFERENCES categories(id) ON DELETE RESTRICT,
     note TEXT,
     date DATE NOT NULL DEFAULT CURRENT_DATE,
+    subscription_id UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    
+    -- Prevent duplicate expenses for same subscription on same date
+    CONSTRAINT expenses_subscription_date_unique UNIQUE(subscription_id, date) WHERE subscription_id IS NOT NULL
 );
 
 -- Create indexes for better performance
@@ -70,6 +74,9 @@ CREATE INDEX IF NOT EXISTS expenses_user_id_idx ON expenses(user_id);
 
 -- Create index on category_id for better performance
 CREATE INDEX IF NOT EXISTS expenses_category_id_idx ON expenses(category_id);
+
+-- Create index on subscription_id for better performance
+CREATE INDEX IF NOT EXISTS expenses_subscription_id_idx ON expenses(subscription_id);
 
 -- Create index on date and updated_at for better sorting performance
 CREATE INDEX IF NOT EXISTS expenses_date_updated_at_idx ON expenses(date DESC, updated_at DESC);
@@ -275,6 +282,11 @@ CREATE INDEX IF NOT EXISTS subscriptions_start_date_idx ON subscriptions(start_d
 CREATE INDEX IF NOT EXISTS subscriptions_next_billing_date_idx ON subscriptions(next_billing_date);
 CREATE INDEX IF NOT EXISTS subscriptions_end_date_idx ON subscriptions(end_date);
 
+-- Composite index for efficient cron job queries (finds subscriptions due for billing)
+CREATE INDEX IF NOT EXISTS subscriptions_billing_lookup_idx 
+    ON subscriptions(next_billing_date, end_date) 
+    WHERE end_date IS NULL OR end_date >= CURRENT_DATE;
+
 -- Create indexes for user_preferences
 CREATE INDEX IF NOT EXISTS user_preferences_user_id_idx ON user_preferences(user_id);
 CREATE INDEX IF NOT EXISTS user_preferences_category_idx ON user_preferences(user_id, category);
@@ -318,6 +330,63 @@ CREATE POLICY "Users can update own preferences" ON user_preferences
 DROP POLICY IF EXISTS "Users can delete own preferences" ON user_preferences;
 CREATE POLICY "Users can delete own preferences" ON user_preferences
     FOR DELETE USING (auth.uid() = user_id);
+
+-- Subscription billing logs table for cron execution tracking
+CREATE TABLE IF NOT EXISTS subscription_billing_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    execution_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    execution_end TIMESTAMP WITH TIME ZONE,
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
+    processed_count INTEGER DEFAULT 0,
+    success_count INTEGER DEFAULT 0,
+    failed_count INTEGER DEFAULT 0,
+    error_details JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Create indexes for subscription_billing_logs
+CREATE INDEX IF NOT EXISTS subscription_billing_logs_execution_start_idx ON subscription_billing_logs(execution_start DESC);
+CREATE INDEX IF NOT EXISTS subscription_billing_logs_status_idx ON subscription_billing_logs(status);
+CREATE INDEX IF NOT EXISTS subscription_billing_logs_created_at_idx ON subscription_billing_logs(created_at DESC);
+
+-- Subscription audit log table for change tracking
+CREATE TABLE IF NOT EXISTS subscription_audit_log (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    subscription_id UUID REFERENCES subscriptions(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    action TEXT NOT NULL CHECK (action IN ('created', 'updated', 'deleted')),
+    old_values JSONB,
+    new_values JSONB,
+    changed_by TEXT NOT NULL CHECK (changed_by IN ('user', 'system')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Create indexes for subscription_audit_log
+CREATE INDEX IF NOT EXISTS subscription_audit_log_subscription_id_idx ON subscription_audit_log(subscription_id);
+CREATE INDEX IF NOT EXISTS subscription_audit_log_user_id_idx ON subscription_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS subscription_audit_log_created_at_idx ON subscription_audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS subscription_audit_log_action_idx ON subscription_audit_log(action);
+
+-- Enable Row Level Security for subscription_billing_logs
+ALTER TABLE subscription_billing_logs ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Only service role can access billing logs (admin/monitoring only)
+DROP POLICY IF EXISTS "Service role can manage billing logs" ON subscription_billing_logs;
+CREATE POLICY "Service role can manage billing logs" ON subscription_billing_logs
+    FOR ALL USING (auth.role() = 'service_role');
+
+-- Enable Row Level Security for subscription_audit_log
+ALTER TABLE subscription_audit_log ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Users can view their own audit logs
+DROP POLICY IF EXISTS "Users can view own subscription audit logs" ON subscription_audit_log;
+CREATE POLICY "Users can view own subscription audit logs" ON subscription_audit_log
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- RLS Policy: Service role can insert audit logs (for system actions)
+DROP POLICY IF EXISTS "Service role can insert audit logs" ON subscription_audit_log;
+CREATE POLICY "Service role can insert audit logs" ON subscription_audit_log
+    FOR INSERT WITH CHECK (auth.role() = 'service_role' OR auth.uid() = user_id);
 
 -- Triggers for subscriptions and user_preferences
 DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON subscriptions;
