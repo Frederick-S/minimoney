@@ -9,7 +9,7 @@
   - _Requirements: 1.7, 3.1, 5.2_
 
 - [ ] 2. Implement timezone preference management
-  - [ ] 2.1 Create useTimezone composable for timezone operations
+  - [x] 2.1 Create useTimezone composable for timezone operations
     - Implement getUserTimezone() to get user's timezone from preferences or browser
     - Implement saveUserTimezone() to save timezone preference
     - Implement timezone conversion utilities using date-fns-tz

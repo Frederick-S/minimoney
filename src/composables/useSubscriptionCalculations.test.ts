@@ -347,6 +347,7 @@ describe('useSubscriptionCalculations', () => {
               userId: fc.uuid(),
               name: fc.string({ minLength: 1, maxLength: 100 }),
               amount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
+              quantity: fc.integer({ min: 1, max: 10 }),
               currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
               billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
               isAutoRenew: fc.boolean(),
@@ -400,8 +401,11 @@ describe('useSubscriptionCalculations', () => {
                 continue
               }
               
+              // Calculate total amount including quantity (amount is unit price)
+              const totalAmount = sub.amount * sub.quantity
+              
               // Add monthly equivalent of each subscription
-              expectedMonthlyTotal += calculateMonthlyEquivalent(sub.displayAmount, sub.billingFrequency)
+              expectedMonthlyTotal += calculateMonthlyEquivalent(totalAmount, sub.billingFrequency)
             }
             
             // Calculate using the composable
@@ -436,6 +440,7 @@ describe('useSubscriptionCalculations', () => {
               userId: fc.uuid(),
               name: fc.string({ minLength: 1, maxLength: 100 }),
               amount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
+              quantity: fc.integer({ min: 1, max: 10 }),
               currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
               billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
               isAutoRenew: fc.boolean(),
@@ -489,8 +494,11 @@ describe('useSubscriptionCalculations', () => {
                 continue
               }
               
+              // Calculate total amount including quantity (amount is unit price)
+              const totalAmount = sub.amount * sub.quantity
+              
               // Add yearly equivalent of each subscription
-              expectedYearlyTotal += calculateYearlyEquivalent(sub.displayAmount, sub.billingFrequency)
+              expectedYearlyTotal += calculateYearlyEquivalent(totalAmount, sub.billingFrequency)
             }
             
             // Calculate using the composable
@@ -527,6 +535,7 @@ describe('useSubscriptionCalculations', () => {
                 userId: fc.uuid(),
                 name: fc.string({ minLength: 1, maxLength: 100 }),
                 amount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
+                quantity: fc.integer({ min: 1, max: 10 }),
                 currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
                 billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
                 isAutoRenew: fc.constant(false),
@@ -562,6 +571,7 @@ describe('useSubscriptionCalculations', () => {
                 userId: fc.uuid(),
                 name: fc.string({ minLength: 1, maxLength: 100 }),
                 amount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
+                quantity: fc.integer({ min: 1, max: 10 }),
                 currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
                 billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
                 isAutoRenew: fc.boolean(),
@@ -614,8 +624,10 @@ describe('useSubscriptionCalculations', () => {
             let expectedMonthlyTotal = 0
             let expectedYearlyTotal = 0
             for (const sub of activeSubscriptions) {
-              expectedMonthlyTotal += calculateMonthlyEquivalent(sub.displayAmount, sub.billingFrequency)
-              expectedYearlyTotal += calculateYearlyEquivalent(sub.displayAmount, sub.billingFrequency)
+              // Calculate total amount including quantity (amount is unit price)
+              const totalAmount = sub.amount * sub.quantity
+              expectedMonthlyTotal += calculateMonthlyEquivalent(totalAmount, sub.billingFrequency)
+              expectedYearlyTotal += calculateYearlyEquivalent(totalAmount, sub.billingFrequency)
             }
             
             // Calculate using the composable
