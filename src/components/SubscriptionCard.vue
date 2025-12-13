@@ -11,7 +11,7 @@
           <!-- Amount Display -->
           <div class="d-flex align-center ga-2 mb-1">
             <div class="text-h5 font-weight-bold text-primary">
-              {{ formatAmount(subscription.displayAmount, subscription.displayCurrency) }}
+              {{ formatAmount(subscription.amount * subscription.quantity, subscription.displayCurrency) }}
             </div>
             
             <!-- Billing Frequency Badge -->
@@ -54,6 +54,14 @@
             >
               已过期
             </v-chip>
+          </div>
+          
+          <!-- Unit Price Display (if quantity > 1) -->
+          <div 
+            v-if="subscription.quantity > 1"
+            class="text-body-2 text-medium-emphasis mb-2"
+          >
+            单价: {{ formatAmount(subscription.amount, subscription.displayCurrency) }} × {{ subscription.quantity }}
           </div>
           
           <!-- Original Currency Display (if different) -->
