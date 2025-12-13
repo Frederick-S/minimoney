@@ -78,7 +78,13 @@
               </div>
               <div class="d-flex justify-space-between align-center text-body-2">
                 <span class="text-medium-emphasis">
-                  {{ sub.billingFrequency === 'monthly' ? '月费' : '年费 ÷ 12' }}
+                  <template v-if="sub.quantity && sub.quantity > 1">
+                    {{ sub.quantity }} × {{ formatAmount(sub.displayAmount, summary.currency) }}
+                    {{ sub.billingFrequency === 'yearly' ? ' ÷ 12' : '' }}
+                  </template>
+                  <template v-else>
+                    {{ sub.billingFrequency === 'monthly' ? '月费' : '年费 ÷ 12' }}
+                  </template>
                 </span>
                 <span class="font-weight-medium">
                   {{ formatAmount(getMonthlyAmount(sub), summary.currency) }}
@@ -121,7 +127,13 @@
               </div>
               <div class="d-flex justify-space-between align-center text-body-2">
                 <span class="text-medium-emphasis">
-                  {{ sub.billingFrequency === 'yearly' ? '年费' : '月费 × 12' }}
+                  <template v-if="sub.quantity && sub.quantity > 1">
+                    {{ sub.quantity }} × {{ formatAmount(sub.displayAmount, summary.currency) }}
+                    {{ sub.billingFrequency === 'monthly' ? ' × 12' : '' }}
+                  </template>
+                  <template v-else>
+                    {{ sub.billingFrequency === 'yearly' ? '年费' : '月费 × 12' }}
+                  </template>
                 </span>
                 <span class="font-weight-medium">
                   {{ formatAmount(getYearlyAmount(sub), summary.currency) }}
@@ -162,19 +174,21 @@ const activeSubscriptions = computed(() => {
 
 // Calculate monthly amount for a subscription
 const getMonthlyAmount = (sub: SubscriptionDisplay): number => {
+  const quantity = sub.quantity || 1
   if (sub.billingFrequency === 'monthly') {
-    return sub.displayAmount
+    return sub.displayAmount * quantity
   } else {
-    return sub.displayAmount / 12
+    return (sub.displayAmount * quantity) / 12
   }
 }
 
 // Calculate yearly amount for a subscription
 const getYearlyAmount = (sub: SubscriptionDisplay): number => {
+  const quantity = sub.quantity || 1
   if (sub.billingFrequency === 'yearly') {
-    return sub.displayAmount
+    return sub.displayAmount * quantity
   } else {
-    return sub.displayAmount * 12
+    return sub.displayAmount * quantity * 12
   }
 }
 
