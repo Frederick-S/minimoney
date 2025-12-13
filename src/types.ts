@@ -237,6 +237,7 @@ export interface Subscription {
   userId: string
   name: string
   amount: number
+  quantity: number  // Default 1, affects total price (amount * quantity)
   currency: string
   billingFrequency: 'monthly' | 'yearly'
   isAutoRenew: boolean
@@ -283,9 +284,9 @@ export interface UserPreference {
  * Subscription display model with currency conversion
  */
 export interface SubscriptionDisplay extends Subscription {
-  displayAmount: number  // Amount in main currency
+  displayAmount: number  // Amount in main currency (already includes quantity)
   displayCurrency: string  // Main currency code
-  originalAmount: number  // Original amount
+  originalAmount: number  // Original amount per unit
   originalCurrency: string  // Original currency
   isExpired: boolean
   isEndingSoon: boolean  // Within 30 days of end date

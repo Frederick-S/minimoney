@@ -99,6 +99,25 @@ export function useSubscriptions() {
       throw new Error('金额过大，请输入合理的金额')
     }
     
+    // Validate quantity
+    if (subscription.quantity !== undefined && subscription.quantity !== null) {
+      if (isNaN(subscription.quantity) || !isFinite(subscription.quantity)) {
+        throw new Error('数量必须是有效的数字')
+      }
+      
+      if (!Number.isInteger(subscription.quantity)) {
+        throw new Error('数量必须是整数')
+      }
+      
+      if (subscription.quantity <= 0) {
+        throw new Error('数量必须大于0')
+      }
+      
+      if (subscription.quantity > 999999) {
+        throw new Error('数量过大，请输入合理的数量')
+      }
+    }
+    
     if (!subscription.currency || subscription.currency.trim() === '') {
       throw new Error('货币不能为空')
     }
@@ -291,6 +310,7 @@ export function useSubscriptions() {
       const dbSubscription = convertKeysToSnakeCase({
         name: subscription.name,
         amount: subscription.amount,
+        quantity: subscription.quantity,
         currency: subscription.currency,
         billingFrequency: subscription.billingFrequency,
         isAutoRenew: subscription.isAutoRenew,

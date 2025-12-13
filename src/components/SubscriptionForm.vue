@@ -33,7 +33,7 @@
           
           <v-text-field
             v-model="amount"
-            label="金额"
+            label="单价"
             type="number"
             step="0.01"
             min="0.01"
@@ -43,6 +43,31 @@
             class="mb-4"
             data-testid="amount-field"
           />
+          
+          <v-text-field
+            v-model="quantity"
+            label="数量"
+            type="number"
+            step="1"
+            min="1"
+            variant="outlined"
+            :rules="quantityRules"
+            required
+            class="mb-4"
+            data-testid="quantity-field"
+            hint="例如：多个许可证或订阅数量"
+            persistent-hint
+          />
+          
+          <v-alert
+            v-if="totalAmount > 0"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            总价: {{ totalAmount.toFixed(2) }} {{ currency }}
+          </v-alert>
           
           <v-select
             v-model="currency"
@@ -150,11 +175,19 @@ const saving = ref(false)
 // Form fields
 const name = ref('')
 const amount = ref('')
+const quantity = ref('1')
 const currency = ref(props.mainCurrency || 'CNY')
 const billingFrequency = ref<'monthly' | 'yearly'>('monthly')
 const renewalType = ref<'auto-renew' | 'fixed-end'>('auto-renew')
 const startDate = ref(getTodayDate())
 const endDate = ref('')
+
+// Computed total amount
+const totalAmount = computed(() => {
+  const amountNum = parseFloat(amount.value) || 0
+  const quantityNum = parseInt(quantity.value) || 1
+  return amountNum * quantityNum
+})
 
 // Currency items for select dropdown
 const currencyItems = computed(() => {
@@ -171,10 +204,18 @@ const nameRules = [
 ]
 
 const amountRules = [
-  (v: string) => !!v || '请输入金额',
+  (v: string) => !!v || '请输入单价',
   (v: string) => {
     const num = parseFloat(v)
-    return (!isNaN(num) && num > 0) || '金额必须大于0'
+    return (!isNaN(num) && num > 0) || '单价必须大于0'
+  }
+]
+
+const quantityRules = [
+  (v: string) => !!v || '请输入数量',
+  (v: string) => {
+    const num = parseInt(v)
+    return (!isNaN(num) && num > 0 && Number.isInteger(num)) || '数量必须是大于0的整数'
   }
 ]
 
@@ -210,6 +251,7 @@ const endDateRules = computed(() => {
 const isFormValid = computed(() => {
   const hasName = name.value.trim().length > 0
   const hasValidAmount = amount.value && parseFloat(amount.value) > 0
+  const hasValidQuantity = quantity.value && parseInt(quantity.value) > 0 && Number.isInteger(parseFloat(quantity.value))
   const hasCurrency = !!currency.value
   const hasBillingFrequency = !!billingFrequency.value
   const hasStartDate = !!startDate.value
@@ -217,10 +259,10 @@ const isFormValid = computed(() => {
   if (renewalType.value === 'fixed-end') {
     const hasEndDate = !!endDate.value
     const isEndDateValid = endDate.value && startDate.value ? new Date(endDate.value) > new Date(startDate.value) : false
-    return hasName && hasValidAmount && hasCurrency && hasBillingFrequency && hasStartDate && hasEndDate && isEndDateValid
+    return hasName && hasValidAmount && hasValidQuantity && hasCurrency && hasBillingFrequency && hasStartDate && hasEndDate && isEndDateValid
   }
   
-  return hasName && hasValidAmount && hasCurrency && hasBillingFrequency && hasStartDate
+  return hasName && hasValidAmount && hasValidQuantity && hasCurrency && hasBillingFrequency && hasStartDate
 })
 
 // Initialize form data based on props
@@ -228,6 +270,7 @@ const initializeForm = () => {
   if (props.subscription) {
     name.value = props.subscription.name
     amount.value = props.subscription.amount.toString()
+    quantity.value = props.subscription.quantity.toString()
     currency.value = props.subscription.currency
     billingFrequency.value = props.subscription.billingFrequency
     renewalType.value = props.subscription.isAutoRenew ? 'auto-renew' : 'fixed-end'
@@ -237,6 +280,7 @@ const initializeForm = () => {
     // New subscription - reset to defaults
     name.value = ''
     amount.value = ''
+    quantity.value = '1'
     currency.value = props.mainCurrency || 'CNY'
     billingFrequency.value = 'monthly'
     renewalType.value = 'auto-renew'
@@ -280,6 +324,7 @@ const closeForm = () => {
 const resetForm = () => {
   name.value = ''
   amount.value = ''
+  quantity.value = '1'
   currency.value = props.mainCurrency || 'CNY'
   billingFrequency.value = 'monthly'
   renewalType.value = 'auto-renew'
@@ -317,6 +362,7 @@ const handleSave = async () => {
     const subscriptionData = {
       name: name.value.trim(),
       amount: parseFloat(amount.value),
+      quantity: parseInt(quantity.value),
       currency: currency.value,
       billingFrequency: billingFrequency.value,
       isAutoRenew: renewalType.value === 'auto-renew',

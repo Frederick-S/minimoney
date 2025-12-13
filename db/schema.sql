@@ -126,6 +126,10 @@ DROP POLICY IF EXISTS "Users can insert own expenses" ON expenses;
 CREATE POLICY "Users can insert own expenses" ON expenses
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can insert expenses" ON expenses;
+CREATE POLICY "Service role can insert expenses" ON expenses
+    FOR INSERT WITH CHECK (auth.role() = 'service_role');
+
 DROP POLICY IF EXISTS "Users can update own expenses" ON expenses;
 CREATE POLICY "Users can update own expenses" ON expenses
     FOR UPDATE USING (auth.uid() = user_id);
@@ -244,6 +248,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     name TEXT NOT NULL,
     amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
     currency TEXT NOT NULL,
     billing_frequency TEXT NOT NULL CHECK (billing_frequency IN ('monthly', 'yearly')),
     is_auto_renew BOOLEAN NOT NULL DEFAULT TRUE,
