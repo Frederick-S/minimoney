@@ -15,6 +15,7 @@
           @logout="handleLogout" 
           @change-password="showPasswordChange = true"
           @currency-settings="showCurrencySettings = true"
+          @timezone-settings="showTimezoneSettings = true"
           @import="showImport = true"
           @export="showExport = true"
         />
@@ -97,6 +98,31 @@
           />
         </v-dialog>
 
+        <!-- Timezone Settings Dialog (only show if authenticated) -->
+        <v-dialog
+          v-if="user"
+          v-model="showTimezoneSettings"
+          max-width="500"
+          :fullscreen="$vuetify.display.mobile"
+        >
+          <v-card v-if="loadingTimezoneSettings">
+            <v-card-title class="text-h6 pa-4">
+              时区设置
+            </v-card-title>
+            <v-card-text class="pa-4 d-flex justify-center align-center" style="min-height: 200px;">
+              <v-progress-circular indeterminate size="64" />
+            </v-card-text>
+          </v-card>
+          <TimezoneSettings
+            v-else
+            ref="timezoneSettingsRef"
+            v-model="tempTimezone"
+            :current-timezone="tempTimezone"
+            @save="handleTimezoneSave"
+            @cancel="handleTimezoneCancel"
+          />
+        </v-dialog>
+
         <!-- Toast Container for notifications -->
         <ToastContainer />
       </v-container>
@@ -111,6 +137,7 @@ import { useSupabase } from './composables/useSupabase'
 import { useExpenseForm } from './composables/useExpenseForm'
 import { useExpenseManagement } from './composables/useExpenseManagement'
 import { useCurrency } from './composables/useCurrency'
+import { useTimezone } from './composables/useTimezone'
 import { useToast } from './composables/useToast'
 import AppHeader from './components/AppHeader.vue'
 import ExpenseFormManager from './components/ExpenseFormManager.vue'
@@ -119,6 +146,7 @@ import BottomNavigation from './components/BottomNavigation.vue'
 import PasswordChange from './components/PasswordChange.vue'
 import ImportExpenses from './components/ImportExpenses.vue'
 import CurrencySettings from './components/CurrencySettings.vue'
+import TimezoneSettings from './components/TimezoneSettings.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import { type Expense } from './types'
 
@@ -126,6 +154,7 @@ const { user, loading, signOut, initAuth, supabase } = useSupabase()
 const { refreshTrigger } = useExpenseManagement()
 const { showForm, editingExpense, openFormForNew, openFormForEdit } = useExpenseForm()
 const { mainCurrency, supportedCurrencies, setMainCurrency, fetchExchangeRates } = useCurrency()
+const { getUserTimezone, saveUserTimezone } = useTimezone()
 const { showSuccess, showError, showWarning } = useToast()
 const router = useRouter()
 
@@ -133,10 +162,14 @@ const showPasswordChange = ref(false)
 const showImport = ref(false)
 const showExport = ref(false)
 const showCurrencySettings = ref(false)
+const showTimezoneSettings = ref(false)
 const currentView = ref<any>(null)
 const currencySettingsRef = ref<any>(null)
+const timezoneSettingsRef = ref<any>(null)
 const tempCurrency = ref(mainCurrency.value)
+const tempTimezone = ref('UTC')
 const loadingCurrencySettings = ref(false)
+const loadingTimezoneSettings = ref(false)
 
 // Initialize auth on app load
 onMounted(async () => {
@@ -219,6 +252,51 @@ watch(showCurrencySettings, async (isOpen) => {
 watch(mainCurrency, (newValue) => {
   if (!showCurrencySettings.value) {
     tempCurrency.value = newValue
+  }
+})
+
+// Handle timezone settings save
+const handleTimezoneSave = async () => {
+  if (!timezoneSettingsRef.value) return
+  
+  try {
+    timezoneSettingsRef.value.saving = true
+    const success = await saveUserTimezone(tempTimezone.value)
+    
+    if (success) {
+      showSuccess('时区设置已保存')
+      showTimezoneSettings.value = false
+    } else {
+      showError('保存时区设置失败')
+    }
+  } catch (error) {
+    console.error('Error saving timezone:', error)
+    showError('保存时区设置失败')
+  } finally {
+    if (timezoneSettingsRef.value) {
+      timezoneSettingsRef.value.saving = false
+    }
+  }
+}
+
+// Handle timezone settings cancel
+const handleTimezoneCancel = () => {
+  showTimezoneSettings.value = false
+}
+
+// Watch for timezone dialog open to load current timezone
+watch(showTimezoneSettings, async (isOpen) => {
+  if (isOpen) {
+    try {
+      loadingTimezoneSettings.value = true
+      const currentTimezone = await getUserTimezone()
+      tempTimezone.value = currentTimezone
+    } catch (error) {
+      console.error('Error loading timezone:', error)
+      showError('加载时区设置失败')
+    } finally {
+      loadingTimezoneSettings.value = false
+    }
   }
 })
 

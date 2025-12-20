@@ -8,18 +8,18 @@
   - Ensure subscription category exists for all users
   - _Requirements: 1.7, 3.1, 5.2_
 
-- [ ] 2. Implement timezone preference management
+- [x] 2. Implement timezone preference management
   - [x] 2.1 Create useTimezone composable for timezone operations
     - Implement getUserTimezone() to get user's timezone from preferences or browser
     - Implement saveUserTimezone() to save timezone preference
     - Implement timezone conversion utilities using date-fns-tz
     - _Requirements: All date-related requirements_
 
-  - [ ] 2.2 Write property test for timezone composable
+  - [x] 2.2 Write property test for timezone composable
     - **Property 15: Timezone round trip**
     - **Validates: Requirements: All date-related requirements**
 
-  - [ ] 2.3 Add timezone selector to user settings UI
+  - [x] 2.3 Add timezone selector to user settings UI
     - Create TimezoneSelector component with common timezone options
     - Display current timezone and UTC offset
     - Integrate with user preferences page

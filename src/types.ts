@@ -369,3 +369,20 @@ export interface CurrencySettingsEmits {
   (e: 'save'): void
   (e: 'cancel'): void
 }
+
+/**
+ * Props for timezone settings component
+ */
+export interface TimezoneSettingsProps {
+  modelValue: string
+  currentTimezone?: string
+}
+
+/**
+ * Emits for timezone settings component
+ */
+export interface TimezoneSettingsEmits {
+  (e: 'update:modelValue', timezone: string): void
+  (e: 'save'): void
+  (e: 'cancel'): void
+}

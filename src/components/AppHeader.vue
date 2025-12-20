@@ -38,6 +38,12 @@
               货币设置
             </v-list-item-title>
           </v-list-item>
+          <v-list-item @click="$emit('timezoneSettings')">
+            <v-list-item-title>
+              <v-icon start>mdi-clock-outline</v-icon>
+              时区设置
+            </v-list-item-title>
+          </v-list-item>
           <v-list-item @click="$emit('changePassword')">
             <v-list-item-title>
               <v-icon start>mdi-lock-reset</v-icon>
@@ -67,6 +73,7 @@ defineEmits<{
   logout: []
   changePassword: []
   currencySettings: []
+  timezoneSettings: []
   import: []
   export: []
 }>()
