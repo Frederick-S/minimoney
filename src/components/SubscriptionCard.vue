@@ -11,7 +11,7 @@
           <!-- Amount Display -->
           <div class="d-flex align-center ga-2 mb-1">
             <div class="text-h5 font-weight-bold text-primary">
-              {{ formatAmount(subscription.amount * subscription.quantity, subscription.displayCurrency) }}
+              {{ formatAmount(subscription.amount * subscription.quantity, subscription.originalCurrency) }}
             </div>
             
             <!-- Billing Frequency Badge -->
@@ -61,15 +61,15 @@
             v-if="subscription.quantity > 1"
             class="text-body-2 text-medium-emphasis mb-2"
           >
-            单价: {{ formatAmount(subscription.amount, subscription.displayCurrency) }} × {{ subscription.quantity }}
+            单价: {{ formatAmount(subscription.amount, subscription.originalCurrency) }} × {{ subscription.quantity }}
           </div>
           
-          <!-- Original Currency Display (if different) -->
+          <!-- Converted Currency Display (if different) -->
           <div 
             v-if="subscription.originalCurrency !== subscription.displayCurrency"
             class="text-body-2 text-medium-emphasis mb-2"
           >
-            原价: {{ formatAmount(subscription.originalAmount, subscription.originalCurrency) }}
+            折合: {{ formatAmount(subscription.displayAmount, subscription.displayCurrency) }}
           </div>
           
           <!-- End Date (for non-auto-renew subscriptions) -->

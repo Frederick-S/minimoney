@@ -133,11 +133,15 @@ const deleting = ref(false)
  */
 const displaySubscriptions = computed<SubscriptionDisplay[]>(() => {
   return subscriptions.value.map(subscription => {
-    const displayAmount = convert(
+    // Convert unit price to display currency
+    const convertedUnitPrice = convert(
       subscription.amount,
       subscription.currency,
       mainCurrency.value
     )
+    
+    // displayAmount should include quantity
+    const displayAmount = convertedUnitPrice * subscription.quantity
 
     return {
       ...subscription,

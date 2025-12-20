@@ -174,21 +174,21 @@ const activeSubscriptions = computed(() => {
 
 // Calculate monthly amount for a subscription
 const getMonthlyAmount = (sub: SubscriptionDisplay): number => {
-  const quantity = sub.quantity || 1
+  // displayAmount already includes quantity
   if (sub.billingFrequency === 'monthly') {
-    return sub.displayAmount * quantity
+    return sub.displayAmount
   } else {
-    return (sub.displayAmount * quantity) / 12
+    return sub.displayAmount / 12
   }
 }
 
 // Calculate yearly amount for a subscription
 const getYearlyAmount = (sub: SubscriptionDisplay): number => {
-  const quantity = sub.quantity || 1
+  // displayAmount already includes quantity
   if (sub.billingFrequency === 'yearly') {
-    return sub.displayAmount * quantity
+    return sub.displayAmount
   } else {
-    return sub.displayAmount * quantity * 12
+    return sub.displayAmount * 12
   }
 }
 

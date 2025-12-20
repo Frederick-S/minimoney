@@ -138,8 +138,9 @@ export function useSubscriptionCalculations() {
       
       activeCount++
       
-      // Calculate total amount including quantity (amount is unit price)
-      const amount = subscription.amount * subscription.quantity
+      // Use displayAmount which is already converted to display currency
+      // displayAmount already includes quantity (amount * quantity converted)
+      const amount = subscription.displayAmount
       
       // Add to monthly total
       totalMonthly += calculateMonthlyEquivalent(amount, subscription.billingFrequency)
