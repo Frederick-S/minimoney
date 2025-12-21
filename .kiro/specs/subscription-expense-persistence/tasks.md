@@ -81,7 +81,7 @@
     - Call createSubscriptionWithExpenses with appropriate flags
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-  - [ ] 5.2 Enhance useSubscriptions composable
+  - [x] 5.2 Enhance useSubscriptions composable
     - Implement createSubscriptionWithExpenses() method
     - Integrate with useSubscriptionExpenses for expense generation
     - Handle transaction-like behavior (rollback on failure)

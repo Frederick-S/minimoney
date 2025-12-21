@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { useSupabase } from './useSupabase'
-import { type Subscription } from '../types'
+import { useSubscriptionExpenses } from './useSubscriptionExpenses'
+import { useTimezone } from './useTimezone'
+import { type Subscription, type PastBillsPreview } from '../types'
 
 // Helper functions to convert between snake_case (database) and camelCase (TypeScript)
 const toCamelCase = (str: string): string => {
@@ -394,6 +396,137 @@ export function useSubscriptions() {
     }
   }
 
+  /**
+   * Create subscription with optional expense generation for past bills
+   * Integrates with useSubscriptionExpenses to generate expense records
+   * Handles transaction-like behavior (rollback on failure)
+   * 
+   * @param subscription - The subscription data (without id, userId, createdAt, updatedAt)
+   * @param generatePastExpenses - Whether to generate expenses for past bills
+   * @param subscriptionCategoryId - The category ID for subscription expenses
+   * @param userTimezone - User's timezone for date calculations
+   * @returns The created subscription
+   */
+  const createSubscriptionWithExpenses = async (
+    subscription: Omit<Subscription, 'id' | 'userId' | 'createdAt' | 'updatedAt'>,
+    generatePastExpenses: boolean,
+    subscriptionCategoryId: string,
+    userTimezone: string
+  ): Promise<Subscription> => {
+    if (!user.value) {
+      throw new Error('用户未登录')
+    }
+
+    // Validate subscription data
+    validateSubscription(subscription)
+
+    // Validate category ID if generating expenses
+    if (generatePastExpenses && !subscriptionCategoryId) {
+      throw new Error('订阅分类不存在，无法生成支出记录')
+    }
+
+    loading.value = true
+
+    try {
+      // Step 1: Create the subscription first
+      const createdSubscription = await createSubscription(subscription)
+
+      // Step 2: Generate expenses if requested
+      if (generatePastExpenses) {
+        try {
+          const { 
+            generatePastBillsPreview, 
+            createExpensesForBillingEvents 
+          } = useSubscriptionExpenses()
+
+          // Generate preview to get billing events
+          const preview = generatePastBillsPreview(
+            subscription.startDate,
+            subscription.amount,
+            subscription.currency,
+            subscription.billingFrequency,
+            userTimezone
+          )
+
+          // Create expenses for all billing events
+          if (preview.events.length > 0) {
+            const result = await createExpensesForBillingEvents(
+              preview.events,
+              {
+                subscriptionId: createdSubscription.id,
+                categoryId: subscriptionCategoryId,
+                userTimezone
+              }
+            )
+
+            // Check if all expenses were created successfully
+            if (result.failed > 0) {
+              console.warn(
+                `Created subscription but ${result.failed} of ${preview.events.length} expenses failed to create`
+              )
+              // Don't throw error - subscription is created, partial expense creation is acceptable
+              // User can retry expense generation later if needed
+            }
+          }
+        } catch (expenseError) {
+          // Expense generation failed, but subscription was created
+          // Attempt to rollback by deleting the subscription
+          console.error('Error generating expenses, attempting rollback:', expenseError)
+          
+          try {
+            await deleteSubscription(createdSubscription.id)
+            throw new Error('创建支出记录失败，订阅创建已回滚')
+          } catch (rollbackError) {
+            console.error('Rollback failed:', rollbackError)
+            throw new Error('创建支出记录失败，订阅已创建但可能需要手动删除')
+          }
+        }
+      }
+
+      return createdSubscription
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Delete subscription with option to delete linked expenses
+   * Provides transaction-like behavior for cleanup
+   * 
+   * @param id - The subscription id to delete
+   * @param deleteExpenses - Whether to delete linked expenses
+   */
+  const deleteSubscriptionWithExpenses = async (
+    id: string,
+    deleteExpenses: boolean
+  ): Promise<void> => {
+    if (!user.value) {
+      throw new Error('用户未登录')
+    }
+
+    loading.value = true
+
+    try {
+      // Step 1: Delete linked expenses if requested
+      if (deleteExpenses) {
+        try {
+          const { deleteSubscriptionExpenses } = useSubscriptionExpenses()
+          await deleteSubscriptionExpenses(id)
+        } catch (expenseError) {
+          console.error('Error deleting subscription expenses:', expenseError)
+          throw new Error('删除关联支出记录失败')
+        }
+      }
+
+      // Step 2: Delete the subscription
+      // Note: If deleteExpenses is false, the expenses will remain with subscription_id
+      // The database schema has ON DELETE SET NULL, so expenses won't be orphaned
+      await deleteSubscription(id)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     subscriptions,
     loading,
@@ -401,6 +534,8 @@ export function useSubscriptions() {
     createSubscription,
     updateSubscription,
     deleteSubscription,
-    calculateNextBillingDate
+    calculateNextBillingDate,
+    createSubscriptionWithExpenses,
+    deleteSubscriptionWithExpenses
   }
 }
