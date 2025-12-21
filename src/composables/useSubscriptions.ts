@@ -359,6 +359,103 @@ export function useSubscriptions() {
   }
 
   /**
+   * Update subscription with automatic expense generation for start date changes
+   * Detects when start date moves earlier and generates expenses for new billing events
+   * 
+   * @param subscription - The updated subscription data with id
+   * @param originalStartDate - The original start date before update
+   * @param subscriptionCategoryId - The category ID for subscription expenses
+   * @param userTimezone - User's timezone for date calculations
+   * @returns The updated subscription
+   */
+  const updateSubscriptionWithExpenses = async (
+    subscription: Subscription,
+    originalStartDate: string,
+    subscriptionCategoryId: string,
+    userTimezone: string
+  ): Promise<Subscription> => {
+    if (!user.value) {
+      throw new Error('用户未登录')
+    }
+
+    // Validate subscription data
+    validateSubscription(subscription)
+
+    // Validate category ID
+    if (!subscriptionCategoryId) {
+      throw new Error('订阅分类不存在，无法生成支出记录')
+    }
+
+    loading.value = true
+
+    try {
+      // Step 1: Check if start date moved earlier
+      const originalStart = new Date(originalStartDate)
+      const newStart = new Date(subscription.startDate)
+
+      let expensesGenerated = false
+
+      if (newStart < originalStart) {
+        // Start date moved earlier - need to generate expenses for the extended period
+        const { 
+          calculateBillingEvents, 
+          createExpensesForBillingEvents 
+        } = useSubscriptionExpenses()
+
+        // Calculate billing events for the period between new start date and original start date
+        // We need to calculate up to (but not including) the original start date
+        // because expenses from original start date onwards should already exist
+        const { format, subDays } = await import('date-fns')
+        const endDate = format(subDays(originalStart, 1), 'yyyy-MM-dd')
+        const startDate = subscription.startDate
+
+        const newEvents = calculateBillingEvents(
+          startDate,
+          endDate,
+          subscription.amount,
+          subscription.currency,
+          subscription.billingFrequency,
+          userTimezone
+        )
+
+        // Step 2: Create expenses for new billing events if any exist
+        if (newEvents.length > 0) {
+          try {
+            const result = await createExpensesForBillingEvents(
+              newEvents,
+              {
+                subscriptionId: subscription.id,
+                categoryId: subscriptionCategoryId,
+                userTimezone
+              }
+            )
+
+            if (result.failed > 0) {
+              console.warn(
+                `Generated ${result.success} expenses but ${result.failed} failed for start date update`
+              )
+            }
+
+            expensesGenerated = true
+          } catch (expenseError) {
+            console.error('Error generating expenses for start date update:', expenseError)
+            // Don't fail the update if expense generation fails
+            // The subscription update should still proceed
+            console.warn('Subscription will be updated but expense generation failed')
+          }
+        }
+      }
+
+      // Step 3: Update the subscription
+      const updatedSubscription = await updateSubscription(subscription)
+
+      return updatedSubscription
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
    * Delete a subscription
    * @param id - The subscription id to delete
    */
@@ -536,6 +633,7 @@ export function useSubscriptions() {
     deleteSubscription,
     calculateNextBillingDate,
     createSubscriptionWithExpenses,
-    deleteSubscriptionWithExpenses
+    deleteSubscriptionWithExpenses,
+    updateSubscriptionWithExpenses
   }
 }

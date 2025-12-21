@@ -99,7 +99,7 @@
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 7. Implement subscription update handling
-  - [ ] 7.1 Add update logic for start date changes
+  - [x] 7.1 Add update logic for start date changes
     - Detect when start date moves earlier
     - Calculate new billing events for extended period
     - Generate expenses for new billing events
