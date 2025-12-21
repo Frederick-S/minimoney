@@ -105,7 +105,7 @@
     - Generate expenses for new billing events
     - _Requirements: 4.1_
 
-  - [ ] 7.2 Write property test for start date update
+  - [x] 7.2 Write property test for start date update
     - **Property 9: Start date update expense generation**
     - **Validates: Requirements 4.1**
 

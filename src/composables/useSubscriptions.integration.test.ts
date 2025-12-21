@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { useSubscriptionExpenses } from './useSubscriptionExpenses'
-import { format } from 'date-fns'
+import { format, subDays } from 'date-fns'
+import * as fc from 'fast-check'
 
 /**
  * Integration Tests for Subscription Creation Flow
@@ -347,5 +348,227 @@ describe('Subscription Creation Flow - Integration Tests', () => {
     expect(typeof preview.totalAmount).toBe('number')
     expect(typeof preview.startDate).toBe('string')
     expect(typeof preview.endDate).toBe('string')
+  })
+})
+
+/**
+ * Property-Based Tests for Subscription Updates
+ * 
+ * These tests validate the update logic for subscriptions, particularly
+ * when start dates change and new expenses need to be generated.
+ */
+describe('Subscription Update Flow - Property-Based Tests', () => {
+  /**
+   * **Feature: subscription-expense-persistence, Property 9: Start date update expense generation**
+   * **Validates: Requirements 4.1**
+   * 
+   * For any subscription update that changes the start date to an earlier date, 
+   * new billing events should be calculated for the period between the new start date 
+   * and the old start date, and expenses should be created for those events.
+   */
+  it('Property 9: Start date update expense generation', () => {
+    const { calculateBillingEvents } = useSubscriptionExpenses()
+
+    fc.assert(
+      fc.property(
+        // Generate original start date between 2020-01-01 and 2024-12-31
+        fc.date({ min: new Date('2020-01-01'), max: new Date('2024-12-31') })
+          .filter(d => !isNaN(d.getTime()))
+          .map(d => {
+            // Normalize to midnight UTC to avoid millisecond issues
+            const normalized = new Date(d)
+            normalized.setUTCHours(0, 0, 0, 0)
+            return normalized
+          }),
+        // Generate number of days to move start date earlier (2 to 365 days)
+        // Minimum 2 days to ensure we have a meaningful period
+        fc.integer({ min: 2, max: 365 }),
+        // Generate amount between 0.01 and 10000
+        fc.float({ min: Math.fround(0.01), max: Math.fround(10000), noNaN: true }),
+        // Generate currency
+        fc.constantFrom('CNY', 'USD', 'EUR'),
+        // Generate frequency
+        fc.constantFrom('monthly' as const, 'yearly' as const),
+        (originalStartDate, daysEarlier, amount, currency, frequency) => {
+          // Calculate new start date (earlier than original)
+          const newStartDate = new Date(originalStartDate)
+          newStartDate.setDate(newStartDate.getDate() - daysEarlier)
+          newStartDate.setUTCHours(0, 0, 0, 0) // Normalize
+
+          const originalStartStr = format(originalStartDate, 'yyyy-MM-dd')
+          const newStartStr = format(newStartDate, 'yyyy-MM-dd')
+
+          // Calculate the end date for new billing events
+          // Should be one day before the original start date
+          const endDate = subDays(originalStartDate, 1)
+          const endDateStr = format(endDate, 'yyyy-MM-dd')
+
+          // Calculate new billing events for the extended period
+          const newEvents = calculateBillingEvents(
+            newStartStr,
+            endDateStr,
+            amount,
+            currency,
+            frequency,
+            'UTC'
+          )
+
+          // Property 1: New events should only cover the extended period
+          // All event dates should be >= new start date and < original start date
+          newEvents.forEach(event => {
+            const eventDate = new Date(event.date + 'T00:00:00Z') // Parse as UTC
+            const newStartNormalized = new Date(newStartStr + 'T00:00:00Z')
+            const originalStartNormalized = new Date(originalStartStr + 'T00:00:00Z')
+            
+            expect(eventDate.getTime()).toBeGreaterThanOrEqual(newStartNormalized.getTime())
+            expect(eventDate.getTime()).toBeLessThan(originalStartNormalized.getTime())
+          })
+
+          // Property 2: Each new event should have correct amount and currency
+          newEvents.forEach(event => {
+            expect(event.amount).toBe(amount)
+            expect(event.currency).toBe(currency)
+          })
+
+          // Property 3: Events should be in chronological order
+          for (let i = 1; i < newEvents.length; i++) {
+            const prevDate = new Date(newEvents[i - 1].date + 'T00:00:00Z')
+            const currDate = new Date(newEvents[i].date + 'T00:00:00Z')
+            expect(currDate.getTime()).toBeGreaterThanOrEqual(prevDate.getTime())
+          }
+
+          // Property 4: Number of new events should be reasonable
+          // For monthly: roughly daysEarlier / 30, for yearly: roughly daysEarlier / 365
+          const expectedMaxEvents = frequency === 'monthly' 
+            ? Math.ceil(daysEarlier / 28) + 1  // +1 for safety, 28 days minimum month
+            : Math.ceil(daysEarlier / 365) + 1
+
+          expect(newEvents.length).toBeLessThanOrEqual(expectedMaxEvents)
+
+          // Property 5: If the period is too short for a billing cycle, 
+          // we might have 0 or 1 events depending on alignment
+          if (frequency === 'yearly' && daysEarlier < 365) {
+            expect(newEvents.length).toBeLessThanOrEqual(1)
+          }
+
+          return true
+        }
+      ),
+      { numRuns: 100 }
+    )
+  })
+
+  /**
+   * Unit test: Verify start date update generates correct new events
+   * 
+   * This test validates a specific scenario where the start date moves
+   * earlier by exactly 2 months for a monthly subscription.
+   */
+  it('should generate new events when start date moves earlier by 2 months', () => {
+    const { calculateBillingEvents } = useSubscriptionExpenses()
+
+    // Original start date: 2024-03-01
+    const originalStartDate = new Date('2024-03-01')
+    
+    // New start date: 2024-01-01 (2 months earlier)
+    const newStartDate = new Date('2024-01-01')
+    
+    // End date for new events: 2024-02-29 (one day before original start)
+    const endDate = subDays(originalStartDate, 1)
+    const endDateStr = format(endDate, 'yyyy-MM-dd')
+
+    // Calculate new billing events
+    const newEvents = calculateBillingEvents(
+      format(newStartDate, 'yyyy-MM-dd'),
+      endDateStr,
+      100,
+      'CNY',
+      'monthly',
+      'UTC'
+    )
+
+    // Should generate 2 events: 2024-01-01 and 2024-02-01
+    expect(newEvents.length).toBe(2)
+    expect(newEvents[0].date).toBe('2024-01-01')
+    expect(newEvents[1].date).toBe('2024-02-01')
+    
+    // All events should have correct amount and currency
+    newEvents.forEach(event => {
+      expect(event.amount).toBe(100)
+      expect(event.currency).toBe('CNY')
+    })
+  })
+
+  /**
+   * Unit test: Verify no new events when start date moves later
+   * 
+   * When start date moves to a later date, no new events should be generated.
+   */
+  it('should generate no new events when start date moves later', () => {
+    const { calculateBillingEvents } = useSubscriptionExpenses()
+
+    // Original start date: 2024-01-01
+    const originalStartDate = new Date('2024-01-01')
+    
+    // New start date: 2024-03-01 (2 months later)
+    const newStartDate = new Date('2024-03-01')
+    
+    // End date for new events: 2023-12-31 (one day before original start)
+    const endDate = subDays(originalStartDate, 1)
+    const endDateStr = format(endDate, 'yyyy-MM-dd')
+
+    // Calculate new billing events (start > end, so no events)
+    const newEvents = calculateBillingEvents(
+      format(newStartDate, 'yyyy-MM-dd'),
+      endDateStr,
+      100,
+      'CNY',
+      'monthly',
+      'UTC'
+    )
+
+    // Should generate 0 events
+    expect(newEvents.length).toBe(0)
+  })
+
+  /**
+   * Unit test: Verify yearly subscription start date update
+   * 
+   * When a yearly subscription's start date moves earlier by 2 years,
+   * 2 new billing events should be generated.
+   */
+  it('should generate new events for yearly subscription when start date moves earlier', () => {
+    const { calculateBillingEvents } = useSubscriptionExpenses()
+
+    // Original start date: 2024-06-01
+    const originalStartDate = new Date('2024-06-01')
+    
+    // New start date: 2022-06-01 (2 years earlier)
+    const newStartDate = new Date('2022-06-01')
+    
+    // End date for new events: 2024-05-31 (one day before original start)
+    const endDate = subDays(originalStartDate, 1)
+    const endDateStr = format(endDate, 'yyyy-MM-dd')
+
+    // Calculate new billing events
+    const newEvents = calculateBillingEvents(
+      format(newStartDate, 'yyyy-MM-dd'),
+      endDateStr,
+      1200,
+      'USD',
+      'yearly',
+      'UTC'
+    )
+
+    // Should generate 2 events: 2022-06-01 and 2023-06-01
+    expect(newEvents.length).toBe(2)
+    expect(newEvents[0].date).toBe('2022-06-01')
+    expect(newEvents[1].date).toBe('2023-06-01')
+    
+    // All events should have correct amount and currency
+    newEvents.forEach(event => {
+      expect(event.amount).toBe(1200)
+      expect(event.currency).toBe('USD')
+    })
   })
 })
