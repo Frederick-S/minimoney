@@ -59,7 +59,7 @@
     - _Requirements: 1.1, 1.6_
 
 - [ ] 4. Create past bills confirmation dialog
-  - [ ] 4.1 Implement PastBillsConfirmDialog component
+  - [x] 4.1 Implement PastBillsConfirmDialog component
     - Display billing event count, date range, and total amount
     - Show formatted preview of expenses to be created
     - Provide confirm and cancel actions
