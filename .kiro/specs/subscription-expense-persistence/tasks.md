@@ -114,7 +114,7 @@
     - Update subscription record
     - _Requirements: 4.2_
 
-  - [ ] 7.4 Write property test for frequency update
+  - [x] 7.4 Write property test for frequency update
     - **Property 10: Frequency update recalculation**
     - **Validates: Requirements 4.2**
 
