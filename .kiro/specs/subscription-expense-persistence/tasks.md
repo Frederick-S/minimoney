@@ -128,7 +128,7 @@
     - **Validates: Requirements 4.3**
 
 - [ ] 8. Enhance expense display with subscription indicators
-  - [ ] 8.1 Update Expense interface and display components
+  - [x] 8.1 Update Expense interface and display components
     - Add subscriptionId field to Expense interface
     - Update ExpenseList to show subscription indicator icon
     - Add tooltip showing subscription name for linked expenses

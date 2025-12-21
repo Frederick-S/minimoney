@@ -40,6 +40,26 @@
                   >
                     {{ getCategoryDisplayName(expense.categoryId) }}
                   </v-chip>
+                  <!-- Subscription indicator -->
+                  <v-tooltip 
+                    v-if="expense.subscriptionId" 
+                    location="top"
+                  >
+                    <template v-slot:activator="{ props: tooltipProps }">
+                      <v-chip
+                        v-bind="tooltipProps"
+                        size="small"
+                        variant="outlined"
+                        color="purple"
+                        prepend-icon="mdi-sync"
+                        @click="navigateToSubscription(expense.subscriptionId)"
+                        style="cursor: pointer;"
+                      >
+                        订阅
+                      </v-chip>
+                    </template>
+                    <span>来自订阅：{{ getSubscriptionName(expense.subscriptionId) }}</span>
+                  </v-tooltip>
                 </div>
                 <div class="text-h6 font-weight-medium text-primary">
                   {{ formatAmount(expense.amount) }}
@@ -138,14 +158,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCategories } from '../composables/useCategories'
+import { useSubscriptions } from '../composables/useSubscriptions'
 import { type Expense, type ExpenseListProps, type ExpenseListEmits } from '../types'
 
 const props = defineProps<ExpenseListProps>()
 const emit = defineEmits<ExpenseListEmits>()
 
+const router = useRouter()
 const { getCategoryDisplayName, getCategoryColor } = useCategories()
+const { subscriptions, loadSubscriptions } = useSubscriptions()
+
+// Load subscriptions on mount to enable subscription name lookup
+onMounted(async () => {
+  if (subscriptions.value.length === 0) {
+    await loadSubscriptions()
+  }
+})
 
 const formatAmount = (amount: number) => {
   return new Intl.NumberFormat('zh-CN', {
@@ -158,6 +189,17 @@ const sortedExpenses = computed(() =>
   // Data is already sorted from database
   props.expenses
 )
+
+// Get subscription name by ID
+const getSubscriptionName = (subscriptionId: string): string => {
+  const subscription = subscriptions.value.find(s => s.id === subscriptionId)
+  return subscription?.name || '未知订阅'
+}
+
+// Navigate to subscription view
+const navigateToSubscription = (subscriptionId: string) => {
+  router.push('/subscriptions')
+}
 
 // Format date for display
 const formatDateLabel = (dateString: string): string => {
