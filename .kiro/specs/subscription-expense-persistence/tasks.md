@@ -58,7 +58,7 @@
     - Test empty billing event arrays
     - _Requirements: 1.1, 1.6_
 
-- [ ] 4. Create past bills confirmation dialog
+- [x] 4. Create past bills confirmation dialog
   - [x] 4.1 Implement PastBillsConfirmDialog component
     - Display billing event count, date range, and total amount
     - Show formatted preview of expenses to be created
@@ -66,7 +66,7 @@
     - Handle loading states during expense creation
     - _Requirements: 1.2, 1.3, 1.5_
 
-  - [ ] 4.2 Write unit tests for dialog component
+  - [x] 4.2 Write unit tests for dialog component
     - Test preview display with various billing event counts
     - Test confirm and cancel actions
     - Test loading states
