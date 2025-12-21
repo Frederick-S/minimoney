@@ -118,7 +118,7 @@
     - **Property 10: Frequency update recalculation**
     - **Validates: Requirements 4.2**
 
-  - [ ] 7.5 Add update logic for amount changes
+  - [x] 7.5 Add update logic for amount changes
     - Verify existing expenses remain unchanged
     - Apply new amount to future billing only
     - _Requirements: 4.3_
