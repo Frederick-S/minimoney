@@ -146,7 +146,7 @@
     - _Requirements: 3.2, 3.3_
 
 - [ ] 9. Implement Supabase Edge Function for automated billing
-  - [ ] 9.1 Create process-subscription-bills Edge Function
+  - [x] 9.1 Create process-subscription-bills Edge Function
     - Set up Edge Function project structure
     - Implement main processing logic with timezone handling
     - Query subscriptions due for billing (in user's timezone)

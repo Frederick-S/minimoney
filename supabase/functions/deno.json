@@ -1,0 +1,14 @@
+{
+  "tasks": {
+    "serve": "deno run --allow-net --allow-env --allow-read --watch process-subscription-bills/index.ts"
+  },
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.52.1",
+    "date-fns": "https://esm.sh/date-fns@4.1.0",
+    "date-fns-tz": "https://esm.sh/date-fns-tz@3.2.0"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  }
+}
