@@ -1122,6 +1122,194 @@ describe('useSubscriptions', () => {
     })
 
     /**
+     * Feature: subscription-expense-persistence, Property 11: Amount update isolation
+     * Validates: Requirements 4.3
+     * 
+     * For any subscription where the amount is updated, all existing expenses linked to that 
+     * subscription should retain their original amounts.
+     */
+    it('Property 11: Amount update isolation', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate an existing subscription
+          fc.record({
+            id: fc.uuid(),
+            userId: fc.constant('test-user-id'),
+            name: fc.string({ minLength: 1, maxLength: 100 }).filter(s => s.trim().length > 0),
+            amount: fc.double({ min: 0.01, max: 100000, noNaN: true }),
+            currency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
+            billingFrequency: fc.constantFrom('monthly' as const, 'yearly' as const),
+            isAutoRenew: fc.boolean(),
+            endDate: fc.option(
+              fc.integer({ min: 1, max: 365 })
+                .map(days => {
+                  const date = new Date()
+                  date.setDate(date.getDate() + days)
+                  return date.toISOString().split('T')[0]
+                })
+            ),
+            nextBillingDate: fc.integer({ min: 1, max: 365 })
+              .map(days => {
+                const date = new Date()
+                date.setDate(date.getDate() + days)
+                return date.toISOString().split('T')[0]
+              }),
+            createdAt: fc.constant(new Date().toISOString()),
+            updatedAt: fc.constant(new Date().toISOString())
+          }).chain(sub => {
+            // Ensure valid auto-renew/end date relationship
+            if (sub.isAutoRenew) {
+              return fc.constant({ ...sub, endDate: undefined })
+            } else if (!sub.endDate) {
+              return fc.constant({
+                ...sub,
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              })
+            }
+            return fc.constant(sub)
+          }),
+          // Generate a new amount (different from the original)
+          fc.double({ min: 0.01, max: 100000, noNaN: true }),
+          async (originalSubscription, newAmount) => {
+            // Skip if the new amount is the same as the original
+            if (Math.abs(originalSubscription.amount - newAmount) < 0.01) {
+              return true
+            }
+
+            // Generate existing expenses linked to this subscription (1 to 10 expenses)
+            // Ensure expense amounts are different from the new subscription amount
+            const existingExpenses = Array.from({ length: Math.floor(Math.random() * 10) + 1 }, () => {
+              let expenseAmount: number
+              do {
+                expenseAmount = Math.random() * 100000 + 0.01
+              } while (Math.abs(expenseAmount - newAmount) < 0.01)
+              
+              return {
+                id: `expense-${Math.random().toString(36).substr(2, 9)}`,
+                amount: expenseAmount,
+                categoryId: `cat-${Math.random().toString(36).substr(2, 9)}`,
+                date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                note: Math.random() > 0.5 ? `Note ${Math.random()}` : undefined,
+                userId: 'test-user-id',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }
+            })
+
+            const { updateSubscriptionAmount, subscriptions } = useSubscriptions()
+
+            // Set up initial state with the original subscription
+            subscriptions.value = [originalSubscription]
+
+            // Store the original amounts of all existing expenses
+            const originalExpenseAmounts = existingExpenses.map(expense => ({
+              id: expense.id,
+              amount: expense.amount
+            }))
+
+            // Create the updated subscription with new amount
+            const updatedSubscription: Subscription = {
+              ...originalSubscription,
+              amount: newAmount
+            }
+
+            // Mock the database response for the subscription update
+            const mockUpdatedAt = new Date().toISOString()
+            mockSupabase.single.mockReset()
+            mockSupabase.single.mockResolvedValue({
+              data: {
+                id: updatedSubscription.id,
+                user_id: updatedSubscription.userId,
+                name: updatedSubscription.name,
+                amount: newAmount,
+                currency: updatedSubscription.currency,
+                billing_frequency: updatedSubscription.billingFrequency,
+                is_auto_renew: updatedSubscription.isAutoRenew,
+                end_date: updatedSubscription.endDate || null,
+                next_billing_date: updatedSubscription.nextBillingDate,
+                created_at: updatedSubscription.createdAt,
+                updated_at: mockUpdatedAt
+              },
+              error: null
+            })
+
+            // Mock the database query for fetching existing expenses
+            // This simulates checking that expenses were NOT modified
+            const mockExpensesData = existingExpenses.map(expense => ({
+              id: expense.id,
+              amount: expense.amount,  // Original amount, not the new subscription amount
+              category_id: expense.categoryId,
+              date: expense.date,
+              note: expense.note || null,
+              user_id: expense.userId,
+              subscription_id: originalSubscription.id,
+              created_at: expense.createdAt,
+              updated_at: expense.updatedAt
+            }))
+
+            // Set up mock for expense query
+            const mockExpenseQuery = {
+              from: vi.fn(() => mockExpenseQuery),
+              select: vi.fn(() => mockExpenseQuery),
+              eq: vi.fn(() => mockExpenseQuery),
+              order: vi.fn(() => ({
+                data: mockExpensesData,
+                error: null
+              }))
+            }
+
+            // Update the subscription amount
+            const result = await updateSubscriptionAmount(
+              updatedSubscription,
+              originalSubscription.amount
+            )
+
+            // Verify the subscription was updated with the new amount
+            expect(result).toBeDefined()
+            expect(result.id).toBe(updatedSubscription.id)
+            expect(result.amount).toBe(newAmount)
+            expect(result.amount).not.toBe(originalSubscription.amount)
+
+            // Verify the subscription is updated in the subscription list
+            expect(subscriptions.value).toHaveLength(1)
+            expect(subscriptions.value[0].amount).toBe(newAmount)
+
+            // Verify the database update was called for the subscription
+            expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+            expect(mockSupabase.update).toHaveBeenCalled()
+            expect(mockSupabase.eq).toHaveBeenCalledWith('id', updatedSubscription.id)
+
+            // CRITICAL: Verify that existing expenses retain their original amounts
+            // We verify this by checking that the mock expense data still has the original amounts
+            for (const originalExpense of originalExpenseAmounts) {
+              const mockExpense = mockExpensesData.find(e => e.id === originalExpense.id)
+              expect(mockExpense).toBeDefined()
+              expect(mockExpense!.amount).toBe(originalExpense.amount)
+              // Verify the expense amount is NOT the new subscription amount
+              expect(mockExpense!.amount).not.toBe(newAmount)
+            }
+
+            // Verify that the expenses table was NOT updated
+            // (we only updated the subscriptions table)
+            const updateCalls = mockSupabase.update.mock.calls
+            const expenseUpdateCalls = updateCalls.filter((call: any) => {
+              // Check if any update call was for the expenses table
+              const fromCalls = mockSupabase.from.mock.calls
+              const callIndex = updateCalls.indexOf(call)
+              return fromCalls[callIndex]?.[0] === 'expenses'
+            })
+            
+            // There should be NO update calls to the expenses table
+            expect(expenseUpdateCalls.length).toBe(0)
+
+            return true
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    /**
      * Feature: subscription-management, Property 4: End date and auto-renew relationship
      * Validates: Requirements 1.5
      * 

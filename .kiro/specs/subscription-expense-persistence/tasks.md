@@ -98,7 +98,7 @@
 - [x] 6. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Implement subscription update handling
+- [x] 7. Implement subscription update handling
   - [x] 7.1 Add update logic for start date changes
     - Detect when start date moves earlier
     - Calculate new billing events for extended period
@@ -123,7 +123,7 @@
     - Apply new amount to future billing only
     - _Requirements: 4.3_
 
-  - [ ] 7.6 Write property test for amount update isolation
+  - [x] 7.6 Write property test for amount update isolation
     - **Property 11: Amount update isolation**
     - **Validates: Requirements 4.3**
 
