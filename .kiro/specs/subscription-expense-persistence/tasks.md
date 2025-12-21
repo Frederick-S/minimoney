@@ -72,7 +72,7 @@
     - Test loading states
     - _Requirements: 1.2, 1.3, 1.5_
 
-- [ ] 5. Enhance subscription form with expense generation
+- [x] 5. Enhance subscription form with expense generation
   - [x] 5.1 Update SubscriptionForm component
     - Integrate timezone from useTimezone composable
     - Calculate past bills when start date changes
@@ -88,7 +88,7 @@
     - Implement deleteSubscriptionWithExpenses() with option dialog
     - _Requirements: 1.4, 1.5, 4.4_
 
-  - [ ] 5.3 Write integration tests for subscription creation flow
+  - [x] 5.3 Write integration tests for subscription creation flow
     - Test subscription creation with past bills confirmed
     - Test subscription creation with past bills declined
     - Test subscription creation with no past bills
