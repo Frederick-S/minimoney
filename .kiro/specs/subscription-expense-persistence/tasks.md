@@ -127,7 +127,7 @@
     - **Property 11: Amount update isolation**
     - **Validates: Requirements 4.3**
 
-- [ ] 8. Enhance expense display with subscription indicators
+- [x] 8. Enhance expense display with subscription indicators
   - [x] 8.1 Update Expense interface and display components
     - Add subscriptionId field to Expense interface
     - Update ExpenseList to show subscription indicator icon
@@ -135,11 +135,11 @@
     - Implement navigation to subscription from expense
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 8.2 Write property test for subscription display indication
+  - [x] 8.2 Write property test for subscription display indication
     - **Property 8: Subscription display indication**
     - **Validates: Requirements 3.2**
 
-  - [ ] 8.3 Write unit tests for expense display enhancements
+  - [x] 8.3 Write unit tests for expense display enhancements
     - Test subscription indicator visibility
     - Test navigation to subscription
     - Test display for non-subscription expenses
