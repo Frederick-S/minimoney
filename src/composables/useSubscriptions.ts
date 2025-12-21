@@ -624,6 +624,78 @@ export function useSubscriptions() {
     }
   }
 
+  /**
+   * Update subscription with automatic next billing date recalculation for frequency changes
+   * Detects when billing frequency changes and recalculates next_billing_date accordingly
+   * 
+   * @param subscription - The updated subscription data with id
+   * @param originalFrequency - The original billing frequency before update
+   * @param userTimezone - User's timezone for date calculations
+   * @returns The updated subscription
+   */
+  const updateSubscriptionWithFrequencyChange = async (
+    subscription: Subscription,
+    originalFrequency: 'monthly' | 'yearly',
+    userTimezone: string
+  ): Promise<Subscription> => {
+    if (!user.value) {
+      throw new Error('用户未登录')
+    }
+
+    // Validate subscription data
+    validateSubscription(subscription)
+
+    loading.value = true
+
+    try {
+      // Check if frequency changed
+      if (subscription.billingFrequency !== originalFrequency) {
+        // Frequency changed - need to recalculate next billing date
+        // The next billing date should be calculated from the last billing date
+        // We use the current nextBillingDate as the base, but need to recalculate
+        // based on the new frequency
+        
+        // Import date-fns functions for date manipulation
+        const { addMonths, addYears, subMonths, subYears, parseISO, format } = await import('date-fns')
+        const { toZonedTime, fromZonedTime } = await import('date-fns-tz')
+        
+        // Get the current next billing date in user's timezone
+        const currentNextBillingDate = parseISO(subscription.nextBillingDate)
+        const currentNextBillingInUserTz = toZonedTime(currentNextBillingDate, userTimezone)
+        
+        // Calculate the last billing date by subtracting one period of the OLD frequency
+        let lastBillingDate: Date
+        if (originalFrequency === 'monthly') {
+          lastBillingDate = subMonths(currentNextBillingInUserTz, 1)
+        } else {
+          lastBillingDate = subYears(currentNextBillingInUserTz, 1)
+        }
+        
+        // Calculate the new next billing date by adding one period of the NEW frequency
+        let newNextBillingDate: Date
+        if (subscription.billingFrequency === 'monthly') {
+          newNextBillingDate = addMonths(lastBillingDate, 1)
+        } else {
+          newNextBillingDate = addYears(lastBillingDate, 1)
+        }
+        
+        // Convert back to UTC for storage
+        const newNextBillingDateUTC = fromZonedTime(newNextBillingDate, userTimezone)
+        const newNextBillingDateString = format(newNextBillingDateUTC, 'yyyy-MM-dd')
+        
+        // Update the subscription object with the new next billing date
+        subscription.nextBillingDate = newNextBillingDateString
+      }
+
+      // Update the subscription with the recalculated next billing date
+      const updatedSubscription = await updateSubscription(subscription)
+
+      return updatedSubscription
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     subscriptions,
     loading,
@@ -634,6 +706,7 @@ export function useSubscriptions() {
     calculateNextBillingDate,
     createSubscriptionWithExpenses,
     deleteSubscriptionWithExpenses,
-    updateSubscriptionWithExpenses
+    updateSubscriptionWithExpenses,
+    updateSubscriptionWithFrequencyChange
   }
 }

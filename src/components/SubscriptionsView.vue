@@ -85,6 +85,7 @@
 import { ref, computed, onMounted, watch, defineExpose } from 'vue'
 import { useSubscriptions } from '../composables/useSubscriptions'
 import { useCurrency } from '../composables/useCurrency'
+import { useTimezone } from '../composables/useTimezone'
 import { useSubscriptionCalculations } from '../composables/useSubscriptionCalculations'
 import { useToast } from '../composables/useToast'
 import SubscriptionList from './SubscriptionList.vue'
@@ -99,7 +100,8 @@ const {
   loadSubscriptions,
   createSubscription,
   updateSubscription,
-  deleteSubscription
+  deleteSubscription,
+  updateSubscriptionWithFrequencyChange
 } = useSubscriptions()
 
 const {
@@ -109,6 +111,8 @@ const {
   loadCachedRates,
   convert
 } = useCurrency()
+
+const { getUserTimezone } = useTimezone()
 
 const {
   isExpired,
@@ -261,7 +265,29 @@ const handleSave = async (
  */
 const handleUpdate = async (subscription: Subscription) => {
   try {
-    await updateSubscription(subscription)
+    // Find the original subscription to detect changes
+    const originalSubscription = subscriptions.value.find(s => s.id === subscription.id)
+    
+    if (!originalSubscription) {
+      throw new Error('原订阅不存在')
+    }
+    
+    // Check if billing frequency changed
+    const frequencyChanged = originalSubscription.billingFrequency !== subscription.billingFrequency
+    
+    if (frequencyChanged) {
+      // Use updateSubscriptionWithFrequencyChange to recalculate next billing date
+      const userTimezone = await getUserTimezone()
+      await updateSubscriptionWithFrequencyChange(
+        subscription,
+        originalSubscription.billingFrequency,
+        userTimezone
+      )
+    } else {
+      // Use regular update
+      await updateSubscription(subscription)
+    }
+    
     showSuccess('订阅已更新')
     showForm.value = false
   } catch (error) {

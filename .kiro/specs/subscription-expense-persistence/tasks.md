@@ -109,7 +109,7 @@
     - **Property 9: Start date update expense generation**
     - **Validates: Requirements 4.1**
 
-  - [ ] 7.3 Add update logic for frequency changes
+  - [x] 7.3 Add update logic for frequency changes
     - Recalculate next_billing_date based on new frequency
     - Update subscription record
     - _Requirements: 4.2_
