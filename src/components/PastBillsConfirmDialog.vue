@@ -148,7 +148,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import type { PastBillsPreview } from '../composables/useSubscriptionExpenses'
+import type { PastBillsPreview } from '../types'
 
 interface PastBillsConfirmDialogProps {
   modelValue: boolean

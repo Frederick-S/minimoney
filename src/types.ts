@@ -17,6 +17,26 @@ export interface Expense {
 }
 
 /**
+ * Represents a single billing event for a subscription
+ */
+export interface BillingEvent {
+  date: string  // ISO date string in user's timezone (YYYY-MM-DD)
+  amount: number
+  currency: string
+}
+
+/**
+ * Preview data for past bills confirmation
+ */
+export interface PastBillsPreview {
+  events: BillingEvent[]
+  count: number
+  totalAmount: number
+  startDate: string  // ISO date string (YYYY-MM-DD)
+  endDate: string    // ISO date string (YYYY-MM-DD)
+}
+
+/**
  * User interface for authentication
  */
 export interface User {
@@ -318,7 +338,7 @@ export interface SubscriptionFormProps {
  */
 export interface SubscriptionFormEmits {
   (e: 'update:modelValue', value: boolean): void
-  (e: 'save', subscription: Omit<Subscription, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): void
+  (e: 'save', subscription: Omit<Subscription, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, generatePastExpenses: boolean, pastBillsPreview: PastBillsPreview | null, userTimezone: string): void
   (e: 'update', subscription: Subscription): void
 }
 

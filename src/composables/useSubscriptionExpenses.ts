@@ -2,29 +2,9 @@ import { ref } from 'vue'
 import { useSupabase } from './useSupabase'
 import { useExpenseManagement } from './useExpenseManagement'
 import { useCategories } from './useCategories'
-import { type Expense } from '../types'
+import { type Expense, type BillingEvent, type PastBillsPreview } from '../types'
 import { addMonths, addYears, parseISO, isValid, isBefore, isAfter, format } from 'date-fns'
 import { toZonedTime, fromZonedTime } from 'date-fns-tz'
-
-/**
- * Represents a single billing event for a subscription
- */
-export interface BillingEvent {
-  date: string  // ISO date string in user's timezone (YYYY-MM-DD)
-  amount: number
-  currency: string
-}
-
-/**
- * Preview data for past bills confirmation
- */
-export interface PastBillsPreview {
-  events: BillingEvent[]
-  count: number
-  totalAmount: number
-  startDate: string  // ISO date string (YYYY-MM-DD)
-  endDate: string    // ISO date string (YYYY-MM-DD)
-}
 
 /**
  * Options for creating subscription expenses

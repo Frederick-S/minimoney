@@ -154,23 +154,48 @@
         </v-btn>
       </v-card-actions>
     </v-card>
+
+    <!-- Past Bills Confirmation Dialog -->
+    <PastBillsConfirmDialog
+      v-model="showPastBillsDialog"
+      :preview="pastBillsPreview"
+      :loading="creatingExpenses"
+      @confirm="handlePastBillsConfirm"
+      @cancel="handlePastBillsCancel"
+    />
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useCurrency } from '../composables/useCurrency'
+import { useTimezone } from '../composables/useTimezone'
+import { useSubscriptionExpenses } from '../composables/useSubscriptionExpenses'
 import { getTodayDate, formatDateToLocal } from '../utils/dateUtils'
-import type { Subscription, SubscriptionFormProps, SubscriptionFormEmits } from '../types'
+import type { Subscription, SubscriptionFormProps, SubscriptionFormEmits, PastBillsPreview } from '../types'
+import PastBillsConfirmDialog from './PastBillsConfirmDialog.vue'
 
 const props = defineProps<SubscriptionFormProps>()
 const emit = defineEmits<SubscriptionFormEmits>()
 
 const { supportedCurrencies } = useCurrency()
+const { getUserTimezone, currentTimezone } = useTimezone()
+const { 
+  generatePastBillsPreview, 
+  createExpensesForBillingEvents,
+  getSubscriptionCategoryId 
+} = useSubscriptionExpenses()
 
 const showForm = ref(props.modelValue)
 const formRef = ref()
 const saving = ref(false)
+
+// Past bills state
+const pastBillsPreview = ref<PastBillsPreview | null>(null)
+const showPastBillsDialog = ref(false)
+const creatingExpenses = ref(false)
+const userTimezone = ref<string>('UTC')
+const shouldCreatePastExpenses = ref(false)
 
 // Form fields
 const name = ref('')
@@ -292,6 +317,16 @@ const initializeForm = () => {
 // Initialize on mount
 initializeForm()
 
+// Load user timezone on mount
+onMounted(async () => {
+  userTimezone.value = await getUserTimezone()
+})
+
+// Watch for start date changes to calculate past bills
+watch([startDate, amount, billingFrequency], () => {
+  calculatePastBills()
+}, { deep: true })
+
 // Watch for form visibility changes
 watch(() => props.modelValue, (newValue) => {
   showForm.value = newValue
@@ -330,6 +365,66 @@ const resetForm = () => {
   renewalType.value = 'auto-renew'
   startDate.value = getTodayDate()
   endDate.value = ''
+  pastBillsPreview.value = null
+  shouldCreatePastExpenses.value = false
+}
+
+/**
+ * Calculate past bills when start date is before today
+ * Shows preview for user confirmation
+ */
+const calculatePastBills = () => {
+  // Reset past bills state
+  pastBillsPreview.value = null
+  shouldCreatePastExpenses.value = false
+
+  // Only calculate for new subscriptions (not when editing)
+  if (props.subscription) {
+    return
+  }
+
+  // Validate required fields
+  if (!startDate.value || !amount.value || !billingFrequency.value) {
+    return
+  }
+
+  const amountNum = parseFloat(amount.value)
+  if (isNaN(amountNum) || amountNum <= 0) {
+    return
+  }
+
+  try {
+    // Check if start date is before today
+    const start = new Date(startDate.value)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    start.setHours(0, 0, 0, 0)
+
+    if (start >= today) {
+      // Start date is today or in the future, no past bills
+      return
+    }
+
+    // Calculate total amount (amount * quantity)
+    const quantityNum = parseInt(quantity.value) || 1
+    const totalAmountPerBill = amountNum * quantityNum
+
+    // Generate preview
+    const preview = generatePastBillsPreview(
+      startDate.value,
+      totalAmountPerBill,
+      currency.value,
+      billingFrequency.value,
+      userTimezone.value
+    )
+
+    if (preview.count > 0) {
+      pastBillsPreview.value = preview
+    }
+  } catch (error) {
+    console.error('Error calculating past bills:', error)
+    // Silently fail - user can still create subscription without past bills
+  }
 }
 
 const calculateNextBillingDate = (): string => {
@@ -357,6 +452,12 @@ const handleSave = async () => {
   if (!isFormValid.value) {
     return
   }
+
+  // If there are past bills and user hasn't confirmed yet, show dialog
+  if (pastBillsPreview.value && pastBillsPreview.value.count > 0 && !shouldCreatePastExpenses.value && !props.subscription) {
+    showPastBillsDialog.value = true
+    return
+  }
   
   try {
     const subscriptionData = {
@@ -375,8 +476,8 @@ const handleSave = async () => {
       // Emit update event with the subscription id
       emit('update', { ...subscriptionData, id: props.subscription.id, userId: props.subscription.userId, createdAt: props.subscription.createdAt, updatedAt: props.subscription.updatedAt })
     } else {
-      // Emit save event for new subscription
-      emit('save', subscriptionData)
+      // Emit save event for new subscription with past bills information
+      emit('save', subscriptionData, shouldCreatePastExpenses.value, pastBillsPreview.value, userTimezone.value)
     }
     
     // Note: Don't close form here - let parent handle it after successful save
@@ -385,5 +486,27 @@ const handleSave = async () => {
     console.error('Error preparing subscription data:', error)
     // Form validation should prevent this, but handle gracefully
   }
+}
+
+/**
+ * Handle confirmation from past bills dialog
+ * Sets flag to create past expenses and proceeds with save
+ */
+const handlePastBillsConfirm = () => {
+  shouldCreatePastExpenses.value = true
+  showPastBillsDialog.value = false
+  // Proceed with save now that user has confirmed
+  handleSave()
+}
+
+/**
+ * Handle cancellation from past bills dialog
+ * Creates subscription without past expenses
+ */
+const handlePastBillsCancel = () => {
+  shouldCreatePastExpenses.value = false
+  showPastBillsDialog.value = false
+  // Proceed with save without creating past expenses
+  handleSave()
 }
 </script>

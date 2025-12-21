@@ -73,7 +73,7 @@
     - _Requirements: 1.2, 1.3, 1.5_
 
 - [ ] 5. Enhance subscription form with expense generation
-  - [ ] 5.1 Update SubscriptionForm component
+  - [x] 5.1 Update SubscriptionForm component
     - Integrate timezone from useTimezone composable
     - Calculate past bills when start date changes
     - Show PastBillsConfirmDialog when past bills exist

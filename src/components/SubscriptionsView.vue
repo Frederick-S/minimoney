@@ -230,9 +230,22 @@ const handleEdit = (subscription: Subscription) => {
 /**
  * Handle save new subscription
  */
-const handleSave = async (subscriptionData: Omit<Subscription, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+const handleSave = async (
+  subscriptionData: Omit<Subscription, 'id' | 'userId' | 'createdAt' | 'updatedAt'>,
+  generatePastExpenses: boolean,
+  pastBillsPreview: any,
+  userTimezone: string
+) => {
   try {
+    // For now, just create the subscription without expenses
+    // Task 5.2 will implement createSubscriptionWithExpenses
     await createSubscription(subscriptionData)
+    
+    // TODO: Task 5.2 - Implement expense generation
+    // if (generatePastExpenses && pastBillsPreview) {
+    //   await createExpensesForBillingEvents(...)
+    // }
+    
     showSuccess('订阅已添加')
     showForm.value = false
   } catch (error) {
