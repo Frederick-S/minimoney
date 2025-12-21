@@ -25,8 +25,8 @@
     - Integrate with user preferences page
     - _Requirements: All date-related requirements_
 
-- [ ] 3. Implement billing event calculation logic
-  - [ ] 3.1 Create useSubscriptionExpenses composable
+- [x] 3. Implement billing event calculation logic
+  - [x] 3.1 Create useSubscriptionExpenses composable
     - Implement calculateBillingEvents() with timezone support
     - Implement generatePastBillsPreview() for user confirmation
     - Implement createExpensesForBillingEvents() with batch creation
@@ -35,23 +35,23 @@
     - Handle month-end dates and leap years correctly
     - _Requirements: 1.1, 1.2, 1.4, 1.6, 1.7, 1.8_
 
-  - [ ] 3.2 Write property test for billing event calculation
+  - [x] 3.2 Write property test for billing event calculation
     - **Property 1: Billing event calculation accuracy**
     - **Validates: Requirements 1.1**
 
-  - [ ] 3.3 Write property test for preview data integrity
+  - [x] 3.3 Write property test for preview data integrity
     - **Property 2: Preview data integrity**
     - **Validates: Requirements 1.2**
 
-  - [ ] 3.4 Write property test for expense creation completeness
+  - [x] 3.4 Write property test for expense creation completeness
     - **Property 3: Expense creation completeness**
     - **Validates: Requirements 1.4**
 
-  - [ ] 3.5 Write property test for expense data integrity
+  - [x] 3.5 Write property test for expense data integrity
     - **Property 4: Expense data integrity**
     - **Validates: Requirements 1.6, 1.7, 1.8, 3.1**
 
-  - [ ] 3.6 Write unit tests for edge cases
+  - [x] 3.6 Write unit tests for edge cases
     - Test month-end date handling (Jan 31 → Feb 28/29)
     - Test leap year handling
     - Test end date constraints

@@ -368,8 +368,6 @@ describe('useSubscriptionCalculations', () => {
                 }),
               createdAt: fc.constant(new Date().toISOString()),
               updatedAt: fc.constant(new Date().toISOString()),
-              // Display fields (already converted to main currency)
-              displayAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
               displayCurrency: fc.constant('CNY'),
               originalAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
               originalCurrency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
@@ -377,16 +375,20 @@ describe('useSubscriptionCalculations', () => {
               isEndingSoon: fc.boolean(),
               daysUntilEnd: fc.option(fc.integer({ min: 1, max: 365 }))
             }).chain(sub => {
+              // Ensure displayAmount = amount * quantity (already converted to display currency)
+              const displayAmount = sub.amount * sub.quantity
+              
               // Ensure valid auto-renew/end date relationship
               if (sub.isAutoRenew) {
-                return fc.constant({ ...sub, endDate: undefined })
+                return fc.constant({ ...sub, displayAmount, endDate: undefined })
               } else if (!sub.endDate) {
                 return fc.constant({
                   ...sub,
+                  displayAmount,
                   endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
                 })
               }
-              return fc.constant(sub)
+              return fc.constant({ ...sub, displayAmount })
             }),
             { minLength: 0, maxLength: 20 }
           ),
@@ -401,11 +403,9 @@ describe('useSubscriptionCalculations', () => {
                 continue
               }
               
-              // Calculate total amount including quantity (amount is unit price)
-              const totalAmount = sub.amount * sub.quantity
-              
+              // displayAmount already includes quantity (amount * quantity)
               // Add monthly equivalent of each subscription
-              expectedMonthlyTotal += calculateMonthlyEquivalent(totalAmount, sub.billingFrequency)
+              expectedMonthlyTotal += calculateMonthlyEquivalent(sub.displayAmount, sub.billingFrequency)
             }
             
             // Calculate using the composable
@@ -461,8 +461,6 @@ describe('useSubscriptionCalculations', () => {
                 }),
               createdAt: fc.constant(new Date().toISOString()),
               updatedAt: fc.constant(new Date().toISOString()),
-              // Display fields (already converted to main currency)
-              displayAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
               displayCurrency: fc.constant('CNY'),
               originalAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
               originalCurrency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
@@ -470,16 +468,20 @@ describe('useSubscriptionCalculations', () => {
               isEndingSoon: fc.boolean(),
               daysUntilEnd: fc.option(fc.integer({ min: 1, max: 365 }))
             }).chain(sub => {
+              // Ensure displayAmount = amount * quantity (already converted to display currency)
+              const displayAmount = sub.amount * sub.quantity
+              
               // Ensure valid auto-renew/end date relationship
               if (sub.isAutoRenew) {
-                return fc.constant({ ...sub, endDate: undefined })
+                return fc.constant({ ...sub, displayAmount, endDate: undefined })
               } else if (!sub.endDate) {
                 return fc.constant({
                   ...sub,
+                  displayAmount,
                   endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
                 })
               }
-              return fc.constant(sub)
+              return fc.constant({ ...sub, displayAmount })
             }),
             { minLength: 0, maxLength: 20 }
           ),
@@ -494,11 +496,9 @@ describe('useSubscriptionCalculations', () => {
                 continue
               }
               
-              // Calculate total amount including quantity (amount is unit price)
-              const totalAmount = sub.amount * sub.quantity
-              
+              // displayAmount already includes quantity (amount * quantity)
               // Add yearly equivalent of each subscription
-              expectedYearlyTotal += calculateYearlyEquivalent(totalAmount, sub.billingFrequency)
+              expectedYearlyTotal += calculateYearlyEquivalent(sub.displayAmount, sub.billingFrequency)
             }
             
             // Calculate using the composable
@@ -554,14 +554,16 @@ describe('useSubscriptionCalculations', () => {
                   }),
                 createdAt: fc.constant(new Date().toISOString()),
                 updatedAt: fc.constant(new Date().toISOString()),
-                displayAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
                 displayCurrency: fc.constant('CNY'),
                 originalAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
                 originalCurrency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
                 isExpired: fc.constant(true),
                 isEndingSoon: fc.constant(false),
                 daysUntilEnd: fc.constant(undefined)
-              }),
+              }).map(sub => ({
+                ...sub,
+                displayAmount: sub.amount * sub.quantity
+              })),
               { minLength: 0, maxLength: 10 }
             ),
             // Generate active subscriptions (auto-renew or future end date)
@@ -592,7 +594,6 @@ describe('useSubscriptionCalculations', () => {
                   }),
                 createdAt: fc.constant(new Date().toISOString()),
                 updatedAt: fc.constant(new Date().toISOString()),
-                displayAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
                 displayCurrency: fc.constant('CNY'),
                 originalAmount: fc.double({ min: 0.01, max: 10000, noNaN: true }),
                 originalCurrency: fc.constantFrom('CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD'),
@@ -600,16 +601,20 @@ describe('useSubscriptionCalculations', () => {
                 isEndingSoon: fc.boolean(),
                 daysUntilEnd: fc.option(fc.integer({ min: 1, max: 365 }))
               }).chain(sub => {
+                // Ensure displayAmount = amount * quantity
+                const displayAmount = sub.amount * sub.quantity
+                
                 // Ensure valid auto-renew/end date relationship
                 if (sub.isAutoRenew) {
-                  return fc.constant({ ...sub, endDate: undefined })
+                  return fc.constant({ ...sub, displayAmount, endDate: undefined })
                 } else if (!sub.endDate) {
                   return fc.constant({
                     ...sub,
+                    displayAmount,
                     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
                   })
                 }
-                return fc.constant(sub)
+                return fc.constant({ ...sub, displayAmount })
               }),
               { minLength: 0, maxLength: 10 }
             )
@@ -624,10 +629,9 @@ describe('useSubscriptionCalculations', () => {
             let expectedMonthlyTotal = 0
             let expectedYearlyTotal = 0
             for (const sub of activeSubscriptions) {
-              // Calculate total amount including quantity (amount is unit price)
-              const totalAmount = sub.amount * sub.quantity
-              expectedMonthlyTotal += calculateMonthlyEquivalent(totalAmount, sub.billingFrequency)
-              expectedYearlyTotal += calculateYearlyEquivalent(totalAmount, sub.billingFrequency)
+              // displayAmount already includes quantity (amount * quantity)
+              expectedMonthlyTotal += calculateMonthlyEquivalent(sub.displayAmount, sub.billingFrequency)
+              expectedYearlyTotal += calculateYearlyEquivalent(sub.displayAmount, sub.billingFrequency)
             }
             
             // Calculate using the composable
