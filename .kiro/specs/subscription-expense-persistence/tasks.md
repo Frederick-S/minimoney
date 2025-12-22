@@ -145,7 +145,7 @@
     - Test display for non-subscription expenses
     - _Requirements: 3.2, 3.3_
 
-- [ ] 9. Implement Supabase Edge Function for automated billing
+- [x] 9. Implement Supabase Edge Function for automated billing
   - [x] 9.1 Create process-subscription-bills Edge Function
     - Set up Edge Function project structure
     - Implement main processing logic with timezone handling
@@ -156,23 +156,23 @@
     - Implement error handling with retry logic (3 attempts)
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 5.3_
 
-  - [ ] 9.2 Write property test for due subscription identification
+  - [x] 9.2 Write property test for due subscription identification
     - **Property 5: Due subscription identification**
     - **Validates: Requirements 2.1**
 
-  - [ ] 9.3 Write property test for billing expense creation
+  - [x] 9.3 Write property test for billing expense creation
     - **Property 6: Billing expense creation**
     - **Validates: Requirements 2.2**
 
-  - [ ] 9.4 Write property test for next billing date update
+  - [x] 9.4 Write property test for next billing date update
     - **Property 7: Next billing date update**
     - **Validates: Requirements 2.3, 2.4, 2.5**
 
-  - [ ] 9.5 Write property test for error isolation
+  - [x] 9.5 Write property test for error isolation
     - **Property 12: Error isolation in batch processing**
     - **Validates: Requirements 5.1**
 
-  - [ ] 9.6 Write unit tests for Edge Function
+  - [x] 9.6 Write unit tests for Edge Function
     - Test timezone conversion logic
     - Test end date handling (edge case from 2.6)
     - Test retry logic
