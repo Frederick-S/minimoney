@@ -44,6 +44,18 @@ Comprehensive test suite using Vitest and fast-check for property-based testing.
   - One subscription's failure doesn't affect others
   - Batch processing maintains isolation
 
+**Property 13: Execution logging** (Requirements 5.2)
+- Validates that execution logs contain all required fields:
+  - `execution_start` timestamp is present and valid
+  - `execution_end` timestamp is present and valid
+  - `processed_count`, `success_count`, `failed_count` are non-negative
+  - Counts are consistent: `processed_count = success_count + failed_count`
+  - `status` is one of: 'running', 'completed', 'failed'
+  - `error_details` is present when `failed_count > 0`
+  - `error_details` is null when `failed_count = 0`
+  - Error array length matches `failed_count`
+  - Each error contains required fields: subscriptionId, userId, subscriptionName, error, timestamp
+
 #### Unit Tests
 
 **getUserTimezone**
@@ -107,6 +119,7 @@ The tests cover:
 - ✅ Property 6: Billing expense creation (Requirements 2.2)
 - ✅ Property 7: Next billing date update (Requirements 2.3, 2.4, 2.5)
 - ✅ Property 12: Error isolation in batch processing (Requirements 5.1)
+- ✅ Property 13: Execution logging (Requirements 5.2)
 - ✅ Timezone conversion logic (Requirements 2.1, 2.2, 2.3)
 - ✅ End date handling (Requirements 2.6)
 - ✅ Retry logic (through property tests)

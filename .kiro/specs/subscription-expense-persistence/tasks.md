@@ -187,7 +187,7 @@
     - Store logs in subscription_billing_logs table
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 10.2 Write property test for execution logging
+  - [x] 10.2 Write property test for execution logging
     - **Property 13: Execution logging**
     - **Validates: Requirements 5.2**
 

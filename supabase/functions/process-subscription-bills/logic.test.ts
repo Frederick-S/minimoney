@@ -13,8 +13,12 @@ import {
   shouldProcessSubscription,
   shouldUpdateNextBillingDate,
   createExpenseData,
+  createBillingLogEntry,
+  validateBillingLogEntry,
   type UserPreference,
-  type Subscription
+  type Subscription,
+  type ProcessingResult,
+  type BillingLogEntry
 } from './logic'
 
 describe('process-subscription-bills Edge Function Logic', () => {
@@ -233,6 +237,119 @@ describe('process-subscription-bills Edge Function Logic', () => {
             
             // Property: Results should be independent (changing one subscription doesn't affect others)
             // This is implicitly tested by the above - each result depends only on its own subscription
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    /**
+     * **Feature: subscription-expense-persistence, Property 13: Execution logging**
+     * **Validates: Requirements 5.2**
+     * 
+     * For any cron job execution, after completion, there should exist a log record 
+     * containing the execution timestamp, processed count, success count, and failed count.
+     */
+    it('Property 13: Execution logging', () => {
+      fc.assert(
+        fc.property(
+          // Generate execution timestamps
+          fc.date({ min: new Date('2024-01-01'), max: new Date('2025-12-31') })
+            .filter(d => !isNaN(d.getTime()))
+            .map(d => d.toISOString()),
+          fc.date({ min: new Date('2024-01-01'), max: new Date('2025-12-31') })
+            .filter(d => !isNaN(d.getTime()))
+            .map(d => d.toISOString()),
+          // Generate processing result
+          fc.record({
+            processedCount: fc.integer({ min: 0, max: 100 }),
+            successCount: fc.integer({ min: 0, max: 100 }),
+            failedCount: fc.integer({ min: 0, max: 100 })
+          }).chain(counts => {
+            // Ensure counts are consistent: processedCount = successCount + failedCount
+            const processedCount = counts.successCount + counts.failedCount
+            
+            // Generate errors array matching failedCount
+            return fc.record({
+              processedCount: fc.constant(processedCount),
+              successCount: fc.constant(counts.successCount),
+              failedCount: fc.constant(counts.failedCount),
+              errors: fc.array(
+                fc.record({
+                  subscriptionId: fc.uuid(),
+                  userId: fc.uuid(),
+                  subscriptionName: fc.string({ minLength: 1, maxLength: 50 }),
+                  error: fc.string({ minLength: 1, maxLength: 200 }),
+                  timestamp: fc.date({ min: new Date('2024-01-01'), max: new Date('2025-12-31') })
+                    .filter(d => !isNaN(d.getTime()))
+                    .map(d => d.toISOString())
+                }),
+                { minLength: counts.failedCount, maxLength: counts.failedCount }
+              )
+            })
+          }),
+          // Generate status
+          fc.constantFrom('completed' as const, 'failed' as const),
+          (executionStart, executionEnd, result, status) => {
+            // Create billing log entry
+            const logEntry = createBillingLogEntry(executionStart, executionEnd, status, result)
+            
+            // Property 1: Log entry should contain execution_start timestamp
+            expect(logEntry.execution_start).toBe(executionStart)
+            expect(logEntry.execution_start).toBeDefined()
+            expect(typeof logEntry.execution_start).toBe('string')
+            
+            // Property 2: Log entry should contain execution_end timestamp
+            expect(logEntry.execution_end).toBe(executionEnd)
+            expect(logEntry.execution_end).toBeDefined()
+            expect(typeof logEntry.execution_end).toBe('string')
+            
+            // Property 3: Log entry should contain processed count
+            expect(logEntry.processed_count).toBe(result.processedCount)
+            expect(logEntry.processed_count).toBeGreaterThanOrEqual(0)
+            
+            // Property 4: Log entry should contain success count
+            expect(logEntry.success_count).toBe(result.successCount)
+            expect(logEntry.success_count).toBeGreaterThanOrEqual(0)
+            
+            // Property 5: Log entry should contain failed count
+            expect(logEntry.failed_count).toBe(result.failedCount)
+            expect(logEntry.failed_count).toBeGreaterThanOrEqual(0)
+            
+            // Property 6: Log entry should contain status
+            expect(logEntry.status).toBe(status)
+            expect(['running', 'completed', 'failed']).toContain(logEntry.status)
+            
+            // Property 7: Counts should be consistent (processed = success + failed)
+            expect(logEntry.processed_count).toBe(logEntry.success_count + logEntry.failed_count)
+            
+            // Property 8: Error details should be present when there are failures
+            if (logEntry.failed_count > 0) {
+              expect(logEntry.error_details).toBeDefined()
+              expect(logEntry.error_details).not.toBeNull()
+              expect(logEntry.error_details?.errors).toBeDefined()
+              expect(Array.isArray(logEntry.error_details?.errors)).toBe(true)
+              expect(logEntry.error_details?.errors.length).toBe(logEntry.failed_count)
+            }
+            
+            // Property 9: Error details should be null when there are no failures
+            if (logEntry.failed_count === 0) {
+              expect(logEntry.error_details).toBeNull()
+            }
+            
+            // Property 10: Each error should contain required fields
+            if (logEntry.error_details && logEntry.error_details.errors) {
+              logEntry.error_details.errors.forEach(error => {
+                expect(error.subscriptionId).toBeDefined()
+                expect(error.userId).toBeDefined()
+                expect(error.subscriptionName).toBeDefined()
+                expect(error.error).toBeDefined()
+                expect(error.timestamp).toBeDefined()
+              })
+            }
+            
+            // Property 11: Log entry should pass validation
+            expect(validateBillingLogEntry(logEntry)).toBe(true)
           }
         ),
         { numRuns: 100 }
@@ -458,6 +575,247 @@ describe('process-subscription-bills Edge Function Logic', () => {
 
       it('should update next billing date when it equals end date', () => {
         expect(shouldUpdateNextBillingDate('2024-12-31', '2024-12-31')).toBe(true)
+      })
+    })
+
+    describe('createBillingLogEntry', () => {
+      it('should create log entry with all required fields', () => {
+        const result: ProcessingResult = {
+          processedCount: 10,
+          successCount: 8,
+          failedCount: 2,
+          errors: [
+            {
+              subscriptionId: 'sub-1',
+              userId: 'user-1',
+              subscriptionName: 'Netflix',
+              error: 'Database error',
+              timestamp: '2024-12-21T10:00:00Z'
+            },
+            {
+              subscriptionId: 'sub-2',
+              userId: 'user-2',
+              subscriptionName: 'Spotify',
+              error: 'Network error',
+              timestamp: '2024-12-21T10:01:00Z'
+            }
+          ]
+        }
+        
+        const logEntry = createBillingLogEntry(
+          '2024-12-21T10:00:00Z',
+          '2024-12-21T10:05:00Z',
+          'completed',
+          result
+        )
+        
+        expect(logEntry.execution_start).toBe('2024-12-21T10:00:00Z')
+        expect(logEntry.execution_end).toBe('2024-12-21T10:05:00Z')
+        expect(logEntry.status).toBe('completed')
+        expect(logEntry.processed_count).toBe(10)
+        expect(logEntry.success_count).toBe(8)
+        expect(logEntry.failed_count).toBe(2)
+        expect(logEntry.error_details).toEqual({ errors: result.errors })
+      })
+
+      it('should set error_details to null when no failures', () => {
+        const result: ProcessingResult = {
+          processedCount: 5,
+          successCount: 5,
+          failedCount: 0,
+          errors: []
+        }
+        
+        const logEntry = createBillingLogEntry(
+          '2024-12-21T10:00:00Z',
+          '2024-12-21T10:05:00Z',
+          'completed',
+          result
+        )
+        
+        expect(logEntry.error_details).toBeNull()
+      })
+
+      it('should handle failed status', () => {
+        const result: ProcessingResult = {
+          processedCount: 1,
+          successCount: 0,
+          failedCount: 1,
+          errors: [
+            {
+              subscriptionId: 'sub-1',
+              userId: 'user-1',
+              subscriptionName: 'Test',
+              error: 'Critical error',
+              timestamp: '2024-12-21T10:00:00Z'
+            }
+          ]
+        }
+        
+        const logEntry = createBillingLogEntry(
+          '2024-12-21T10:00:00Z',
+          '2024-12-21T10:05:00Z',
+          'failed',
+          result
+        )
+        
+        expect(logEntry.status).toBe('failed')
+        expect(logEntry.failed_count).toBe(1)
+        expect(logEntry.error_details).toBeDefined()
+      })
+    })
+
+    describe('validateBillingLogEntry', () => {
+      it('should validate correct log entry', () => {
+        const logEntry: BillingLogEntry = {
+          execution_start: '2024-12-21T10:00:00Z',
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'completed',
+          processed_count: 10,
+          success_count: 8,
+          failed_count: 2,
+          error_details: {
+            errors: [
+              {
+                subscriptionId: 'sub-1',
+                userId: 'user-1',
+                subscriptionName: 'Test',
+                error: 'Error',
+                timestamp: '2024-12-21T10:00:00Z'
+              },
+              {
+                subscriptionId: 'sub-2',
+                userId: 'user-2',
+                subscriptionName: 'Test2',
+                error: 'Error2',
+                timestamp: '2024-12-21T10:01:00Z'
+              }
+            ]
+          }
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(true)
+      })
+
+      it('should reject log entry with missing execution_start', () => {
+        const logEntry: any = {
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'completed',
+          processed_count: 10,
+          success_count: 10,
+          failed_count: 0,
+          error_details: null
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(false)
+      })
+
+      it('should reject log entry with missing execution_end', () => {
+        const logEntry: any = {
+          execution_start: '2024-12-21T10:00:00Z',
+          status: 'completed',
+          processed_count: 10,
+          success_count: 10,
+          failed_count: 0,
+          error_details: null
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(false)
+      })
+
+      it('should reject log entry with invalid status', () => {
+        const logEntry: any = {
+          execution_start: '2024-12-21T10:00:00Z',
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'invalid',
+          processed_count: 10,
+          success_count: 10,
+          failed_count: 0,
+          error_details: null
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(false)
+      })
+
+      it('should reject log entry with negative counts', () => {
+        const logEntry: BillingLogEntry = {
+          execution_start: '2024-12-21T10:00:00Z',
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'completed',
+          processed_count: -1,
+          success_count: 0,
+          failed_count: 0,
+          error_details: null
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(false)
+      })
+
+      it('should reject log entry with inconsistent counts', () => {
+        const logEntry: BillingLogEntry = {
+          execution_start: '2024-12-21T10:00:00Z',
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'completed',
+          processed_count: 10,
+          success_count: 8,
+          failed_count: 3,  // Should be 2 to match processed_count
+          error_details: null
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(false)
+      })
+
+      it('should reject log entry with failures but no error_details', () => {
+        const logEntry: BillingLogEntry = {
+          execution_start: '2024-12-21T10:00:00Z',
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'completed',
+          processed_count: 10,
+          success_count: 8,
+          failed_count: 2,
+          error_details: null
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(false)
+      })
+
+      it('should reject log entry with mismatched error count', () => {
+        const logEntry: BillingLogEntry = {
+          execution_start: '2024-12-21T10:00:00Z',
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'completed',
+          processed_count: 10,
+          success_count: 8,
+          failed_count: 2,
+          error_details: {
+            errors: [
+              {
+                subscriptionId: 'sub-1',
+                userId: 'user-1',
+                subscriptionName: 'Test',
+                error: 'Error',
+                timestamp: '2024-12-21T10:00:00Z'
+              }
+              // Only 1 error, but failed_count is 2
+            ]
+          }
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(false)
+      })
+
+      it('should validate log entry with no failures', () => {
+        const logEntry: BillingLogEntry = {
+          execution_start: '2024-12-21T10:00:00Z',
+          execution_end: '2024-12-21T10:05:00Z',
+          status: 'completed',
+          processed_count: 10,
+          success_count: 10,
+          failed_count: 0,
+          error_details: null
+        }
+        
+        expect(validateBillingLogEntry(logEntry)).toBe(true)
       })
     })
   })

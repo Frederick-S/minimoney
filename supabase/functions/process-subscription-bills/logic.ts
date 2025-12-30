@@ -1,6 +1,15 @@
 /**
  * Core business logic for process-subscription-bills Edge Function
  * Extracted for testing purposes
+ * 
+ * Exports:
+ * - getUserTimezone() - Get user's timezone preference
+ * - calculateNextBillingDate() - Calculate next billing date based on frequency
+ * - shouldProcessSubscription() - Determine if a subscription should be processed
+ * - shouldUpdateNextBillingDate() - Check if next billing date should be updated
+ * - createExpenseData() - Create expense data from subscription
+ * - createBillingLogEntry() - Create a billing log entry from processing result
+ * - validateBillingLogEntry() - Validate that a billing log entry contains all required fields
  */
 
 import { parseISO, format, isValid, isBefore, addMonths, addYears } from 'date-fns'
@@ -122,4 +131,86 @@ export function createExpenseData(
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
+}
+
+/**
+ * Processing result interface
+ */
+export interface ProcessingResult {
+  processedCount: number
+  successCount: number
+  failedCount: number
+  errors: Array<{ subscriptionId: string; userId: string; subscriptionName: string; error: string; timestamp: string }>
+}
+
+/**
+ * Billing log entry interface
+ */
+export interface BillingLogEntry {
+  execution_start: string
+  execution_end: string | null
+  status: 'running' | 'completed' | 'failed'
+  processed_count: number
+  success_count: number
+  failed_count: number
+  error_details: { errors: ProcessingResult['errors'] } | null
+}
+
+/**
+ * Create a billing log entry from processing result
+ * This function encapsulates the logic for creating log entries
+ */
+export function createBillingLogEntry(
+  executionStart: string,
+  executionEnd: string,
+  status: 'completed' | 'failed',
+  result: ProcessingResult
+): BillingLogEntry {
+  return {
+    execution_start: executionStart,
+    execution_end: executionEnd,
+    status,
+    processed_count: result.processedCount,
+    success_count: result.successCount,
+    failed_count: result.failedCount,
+    error_details: result.errors.length > 0 ? { errors: result.errors } : null
+  }
+}
+
+/**
+ * Validate that a billing log entry contains all required fields
+ */
+export function validateBillingLogEntry(logEntry: BillingLogEntry): boolean {
+  // Check that all required fields are present
+  if (!logEntry.execution_start || !logEntry.execution_end) {
+    return false
+  }
+  
+  // Check that status is valid
+  if (!['running', 'completed', 'failed'].includes(logEntry.status)) {
+    return false
+  }
+  
+  // Check that counts are non-negative
+  if (logEntry.processed_count < 0 || logEntry.success_count < 0 || logEntry.failed_count < 0) {
+    return false
+  }
+  
+  // Check that counts are consistent
+  // processed_count should equal success_count + failed_count
+  if (logEntry.processed_count !== logEntry.success_count + logEntry.failed_count) {
+    return false
+  }
+  
+  // Check that error_details is present when there are failures
+  if (logEntry.failed_count > 0 && (!logEntry.error_details || !logEntry.error_details.errors)) {
+    return false
+  }
+  
+  // Check that error_details array length matches failed_count
+  if (logEntry.error_details && logEntry.error_details.errors.length !== logEntry.failed_count) {
+    return false
+  }
+  
+  return true
 }
