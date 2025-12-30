@@ -195,7 +195,7 @@
     - **Property 14: Update retry behavior**
     - **Validates: Requirements 5.3**
 
-  - [ ] 10.4 Create monitoring dashboard queries
+  - [x] 10.4 Create monitoring dashboard queries
     - Implement SQL queries for recent executions
     - Implement SQL queries for success rate calculation
     - Implement SQL queries for failed subscriptions
