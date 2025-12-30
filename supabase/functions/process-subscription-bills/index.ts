@@ -357,21 +357,86 @@ async function processSubscriptionBills(supabase: any): Promise<ProcessingResult
 
 /**
  * Log execution to database
+ * Returns the log ID for updating later
  */
-async function logExecution(
+async function logExecutionStart(
   supabase: any,
-  logEntry: Partial<BillingLogEntry>
+  executionStart: string
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('subscription_billing_logs')
+      .insert({
+        execution_start: executionStart,
+        status: 'running',
+        processed_count: 0,
+        success_count: 0,
+        failed_count: 0,
+        error_details: null
+      })
+      .select('id')
+      .single()
+    
+    if (error) {
+      console.error('Failed to log execution start:', error)
+      return null
+    }
+    
+    return data?.id || null
+  } catch (error) {
+    console.error('Failed to log execution start:', error)
+    return null
+  }
+}
+
+/**
+ * Update execution log with completion details
+ */
+async function logExecutionEnd(
+  supabase: any,
+  logId: string | null,
+  executionEnd: string,
+  status: 'completed' | 'failed',
+  result: ProcessingResult
 ): Promise<void> {
+  if (!logId) {
+    // If we don't have a log ID, insert a new record
+    try {
+      await supabase
+        .from('subscription_billing_logs')
+        .insert({
+          execution_start: executionEnd,
+          execution_end: executionEnd,
+          status,
+          processed_count: result.processedCount,
+          success_count: result.successCount,
+          failed_count: result.failedCount,
+          error_details: result.errors.length > 0 ? { errors: result.errors } : null
+        })
+    } catch (error) {
+      console.error('Failed to insert execution log:', error)
+    }
+    return
+  }
+  
   try {
     const { error } = await supabase
       .from('subscription_billing_logs')
-      .insert(logEntry)
+      .update({
+        execution_end: executionEnd,
+        status,
+        processed_count: result.processedCount,
+        success_count: result.successCount,
+        failed_count: result.failedCount,
+        error_details: result.errors.length > 0 ? { errors: result.errors } : null
+      })
+      .eq('id', logId)
     
     if (error) {
-      console.error('Failed to log execution:', error)
+      console.error('Failed to update execution log:', error)
     }
   } catch (error) {
-    console.error('Failed to log execution:', error)
+    console.error('Failed to update execution log:', error)
   }
 }
 
@@ -462,19 +527,13 @@ Deno.serve(async (req) => {
     }
     
     // Log execution start
-    await logExecution(supabase, {
-      execution_start: executionStart,
-      status: 'running',
-      processed_count: 0,
-      success_count: 0,
-      failed_count: 0,
-      error_details: null
-    })
+    const logId = await logExecutionStart(supabase, executionStart)
     
     console.log(JSON.stringify({
       level: 'INFO',
       timestamp: executionStart,
-      message: 'Starting subscription billing processing'
+      message: 'Starting subscription billing processing',
+      data: { logId }
     }))
     
     // Process subscriptions
@@ -483,15 +542,7 @@ Deno.serve(async (req) => {
     const executionEnd = new Date().toISOString()
     
     // Log execution completion
-    await logExecution(supabase, {
-      execution_start: executionStart,
-      execution_end: executionEnd,
-      status: 'completed',
-      processed_count: result.processedCount,
-      success_count: result.successCount,
-      failed_count: result.failedCount,
-      error_details: result.errors.length > 0 ? { errors: result.errors } : null
-    })
+    await logExecutionEnd(supabase, logId, executionEnd, 'completed', result)
     
     console.log(JSON.stringify({
       level: 'INFO',
@@ -532,21 +583,23 @@ Deno.serve(async (req) => {
       
       if (supabaseUrl && supabaseServiceKey) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
-        await logExecution(supabase, {
-          execution_start: executionStart,
-          execution_end: executionEnd,
-          status: 'failed',
-          processed_count: 0,
-          success_count: 0,
-          failed_count: 0,
-          error_details: { errors: [{ 
+        
+        // Create a result object for the error
+        const errorResult: ProcessingResult = {
+          processedCount: 0,
+          successCount: 0,
+          failedCount: 1,
+          errors: [{ 
             subscriptionId: 'N/A',
             userId: 'N/A',
             subscriptionName: 'N/A',
             error: errorMessage,
             timestamp: executionEnd
-          }] }
-        })
+          }]
+        }
+        
+        // Try to update existing log or insert new one
+        await logExecutionEnd(supabase, null, executionEnd, 'failed', errorResult)
       }
     } catch (logError) {
       console.error('Failed to log error:', logError)
