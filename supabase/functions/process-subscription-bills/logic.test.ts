@@ -15,6 +15,7 @@ import {
   createExpenseData,
   createBillingLogEntry,
   validateBillingLogEntry,
+  retryWithBackoff,
   type UserPreference,
   type Subscription,
   type ProcessingResult,
@@ -350,6 +351,49 @@ describe('process-subscription-bills Edge Function Logic', () => {
             
             // Property 11: Log entry should pass validation
             expect(validateBillingLogEntry(logEntry)).toBe(true)
+          }
+        ),
+        { numRuns: 100 }
+      )
+    })
+
+    /**
+     * **Feature: subscription-expense-persistence, Property 14: Update retry behavior**
+     * **Validates: Requirements 5.3**
+     * 
+     * For any failed subscription update operation during cron job execution, the system 
+     * should attempt the operation up to 3 times before recording it as a failure.
+     */
+    it('Property 14: Update retry behavior', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          // Generate number of failures before success (0 = success on first try, 1 = fail once then succeed, etc.)
+          fc.integer({ min: 0, max: 4 }),
+          async (failuresBeforeSuccess) => {
+            let attemptCount = 0
+            const maxAttempts = 3
+            
+            // Create a function that fails N times then succeeds
+            const mockOperation = async () => {
+              attemptCount++
+              if (attemptCount <= failuresBeforeSuccess) {
+                throw new Error(`Attempt ${attemptCount} failed`)
+              }
+              return 'success'
+            }
+            
+            // Property 1: If operation succeeds within maxAttempts, should return success
+            if (failuresBeforeSuccess < maxAttempts) {
+              const result = await retryWithBackoff(mockOperation, maxAttempts, 10) // Use 10ms delay for testing
+              expect(result).toBe('success')
+              // Property 4: Should attempt exactly (failuresBeforeSuccess + 1) times if succeeds
+              expect(attemptCount).toBe(failuresBeforeSuccess + 1)
+            } else {
+              // Property 2: If operation fails maxAttempts times, should throw error
+              await expect(retryWithBackoff(mockOperation, maxAttempts, 10)).rejects.toThrow()
+              // Property 3: Should attempt exactly maxAttempts times before giving up
+              expect(attemptCount).toBe(maxAttempts)
+            }
           }
         ),
         { numRuns: 100 }

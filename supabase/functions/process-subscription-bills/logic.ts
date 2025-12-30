@@ -10,6 +10,7 @@
  * - createExpenseData() - Create expense data from subscription
  * - createBillingLogEntry() - Create a billing log entry from processing result
  * - validateBillingLogEntry() - Validate that a billing log entry contains all required fields
+ * - retryWithBackoff() - Retry a function with exponential backoff
  */
 
 import { parseISO, format, isValid, isBefore, addMonths, addYears } from 'date-fns'
@@ -213,4 +214,32 @@ export function validateBillingLogEntry(logEntry: BillingLogEntry): boolean {
   }
   
   return true
+}
+
+/**
+ * Retry a function with exponential backoff
+ * Used for database operations that may fail transiently
+ */
+export async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      lastError = error as Error
+      
+      if (attempt < maxAttempts) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = baseDelay * Math.pow(2, attempt - 1)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+  }
+  
+  throw lastError
 }
