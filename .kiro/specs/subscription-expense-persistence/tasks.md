@@ -208,7 +208,7 @@
     - _Requirements: 5.2_
 
 - [ ] 11. Set up cron job scheduling
-  - [ ] 11.1 Create pg_cron schedule in database
+  - [x] 11.1 Create pg_cron schedule in database
     - Write SQL script to enable pg_cron extension
     - Create hourly cron job (0 * * * *)
     - Configure HTTP POST to Edge Function URL
@@ -223,7 +223,7 @@
     - _Requirements: 2.1, 2.2, 5.2_
 
 - [ ] 12. Implement audit trail for subscription changes
-  - [ ] 12.1 Add audit logging to subscription operations
+  - [x] 12.1 Add audit logging to subscription operations
     - Log subscription creation with initial values
     - Log subscription updates with old and new values
     - Log subscription deletion

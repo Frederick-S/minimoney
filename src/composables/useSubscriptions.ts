@@ -48,6 +48,45 @@ export function useSubscriptions() {
   const { user, supabase } = useSupabase()
 
   /**
+   * Log subscription audit entry
+   * @param subscriptionId - The subscription ID
+   * @param userId - The user ID
+   * @param action - The action performed ('created', 'updated', 'deleted')
+   * @param oldValues - The old values (for update/delete)
+   * @param newValues - The new values (for create/update)
+   * @param changedBy - Who made the change ('user' or 'system')
+   */
+  const logAudit = async (
+    subscriptionId: string,
+    userId: string,
+    action: 'created' | 'updated' | 'deleted',
+    oldValues: Record<string, any> | null,
+    newValues: Record<string, any> | null,
+    changedBy: 'user' | 'system'
+  ): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('subscription_audit_log')
+        .insert([{
+          subscription_id: subscriptionId,
+          user_id: userId,
+          action,
+          old_values: oldValues,
+          new_values: newValues,
+          changed_by: changedBy
+        }])
+
+      if (error) {
+        console.error('Error logging audit entry:', error)
+        // Don't throw - audit logging failure shouldn't block the operation
+      }
+    } catch (error) {
+      console.error('Unexpected error logging audit entry:', error)
+      // Don't throw - audit logging failure shouldn't block the operation
+    }
+  }
+
+  /**
    * Calculate next billing date based on start date and billing frequency
    * @param startDate - The starting date for billing calculation
    * @param frequency - The billing frequency ('monthly' or 'yearly')
@@ -281,6 +320,26 @@ export function useSubscriptions() {
 
       const createdSubscription = convertKeysToCamelCase<Subscription>(data)
       
+      // Log audit entry for subscription creation
+      await logAudit(
+        createdSubscription.id,
+        user.value.id,
+        'created',
+        null,
+        {
+          name: createdSubscription.name,
+          amount: createdSubscription.amount,
+          quantity: createdSubscription.quantity,
+          currency: createdSubscription.currency,
+          billingFrequency: createdSubscription.billingFrequency,
+          isAutoRenew: createdSubscription.isAutoRenew,
+          startDate: createdSubscription.startDate,
+          endDate: createdSubscription.endDate,
+          nextBillingDate: createdSubscription.nextBillingDate
+        },
+        'user'
+      )
+      
       // Add to local state
       subscriptions.value.unshift(createdSubscription)
       
@@ -306,6 +365,21 @@ export function useSubscriptions() {
     loading.value = true
 
     try {
+      // Get the old subscription values for audit logging
+      const { data: oldData, error: fetchError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', subscription.id)
+        .eq('user_id', user.value.id)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching old subscription data:', fetchError)
+        // Continue with update even if we can't fetch old data
+      }
+
+      const oldSubscription = oldData ? convertKeysToCamelCase<Subscription>(oldData) : null
+
       const now = new Date().toISOString()
 
       // Convert camelCase to snake_case for database
@@ -345,6 +419,38 @@ export function useSubscriptions() {
       }
 
       const updatedSubscription = convertKeysToCamelCase<Subscription>(data)
+      
+      // Log audit entry for subscription update
+      if (oldSubscription) {
+        await logAudit(
+          updatedSubscription.id,
+          user.value.id,
+          'updated',
+          {
+            name: oldSubscription.name,
+            amount: oldSubscription.amount,
+            quantity: oldSubscription.quantity,
+            currency: oldSubscription.currency,
+            billingFrequency: oldSubscription.billingFrequency,
+            isAutoRenew: oldSubscription.isAutoRenew,
+            startDate: oldSubscription.startDate,
+            endDate: oldSubscription.endDate,
+            nextBillingDate: oldSubscription.nextBillingDate
+          },
+          {
+            name: updatedSubscription.name,
+            amount: updatedSubscription.amount,
+            quantity: updatedSubscription.quantity,
+            currency: updatedSubscription.currency,
+            billingFrequency: updatedSubscription.billingFrequency,
+            isAutoRenew: updatedSubscription.isAutoRenew,
+            startDate: updatedSubscription.startDate,
+            endDate: updatedSubscription.endDate,
+            nextBillingDate: updatedSubscription.nextBillingDate
+          },
+          'user'
+        )
+      }
       
       // Update local state
       const index = subscriptions.value.findIndex(s => s.id === subscription.id)
@@ -467,6 +573,21 @@ export function useSubscriptions() {
     loading.value = true
 
     try {
+      // Get the subscription data before deletion for audit logging
+      const { data: oldData, error: fetchError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.value.id)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching subscription for deletion:', fetchError)
+        // Continue with deletion even if we can't fetch old data
+      }
+
+      const oldSubscription = oldData ? convertKeysToCamelCase<Subscription>(oldData) : null
+
       const { error } = await supabase
         .from('subscriptions')
         .delete()
@@ -484,6 +605,28 @@ export function useSubscriptions() {
         } else {
           throw new Error('删除订阅失败，请重试')
         }
+      }
+
+      // Log audit entry for subscription deletion
+      if (oldSubscription) {
+        await logAudit(
+          id,
+          user.value.id,
+          'deleted',
+          {
+            name: oldSubscription.name,
+            amount: oldSubscription.amount,
+            quantity: oldSubscription.quantity,
+            currency: oldSubscription.currency,
+            billingFrequency: oldSubscription.billingFrequency,
+            isAutoRenew: oldSubscription.isAutoRenew,
+            startDate: oldSubscription.startDate,
+            endDate: oldSubscription.endDate,
+            nextBillingDate: oldSubscription.nextBillingDate
+          },
+          null,
+          'user'
+        )
       }
 
       // Remove from local state
