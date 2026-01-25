@@ -47,25 +47,15 @@
       />
 
       <!-- Delete Confirmation Dialog -->
-      <v-dialog v-model="showDeleteDialog" max-width="400">
-        <v-card>
-          <v-card-title class="text-h6">
-            确认删除
-          </v-card-title>
-          <v-card-text>
-            确定要删除订阅 "{{ deletingSubscription?.name }}" 吗？此操作无法撤销。
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn variant="outlined" @click="cancelDelete">
-              取消
-            </v-btn>
-            <v-btn color="error" variant="flat" @click="confirmDelete" :loading="deleting">
-              删除
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <SubscriptionDeleteDialog
+        v-model="showDeleteDialog"
+        :subscription-name="deletingSubscription?.name || ''"
+        :expense-count="deletingExpenseCount"
+        :loading="deleting"
+        :loading-expenses="loadingExpenseCount"
+        @confirm="confirmDelete"
+        @cancel="cancelDelete"
+      />
 
       <!-- Floating Action Button for adding subscriptions -->
       <div class="fixed-fab">
@@ -84,6 +74,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, defineExpose } from 'vue'
 import { useSubscriptions } from '../composables/useSubscriptions'
+import { useSubscriptionExpenses } from '../composables/useSubscriptionExpenses'
 import { useCurrency } from '../composables/useCurrency'
 import { useTimezone } from '../composables/useTimezone'
 import { useSubscriptionCalculations } from '../composables/useSubscriptionCalculations'
@@ -91,6 +82,7 @@ import { useToast } from '../composables/useToast'
 import SubscriptionList from './SubscriptionList.vue'
 import SubscriptionForm from './SubscriptionForm.vue'
 import SubscriptionSummary from './SubscriptionSummary.vue'
+import SubscriptionDeleteDialog from './SubscriptionDeleteDialog.vue'
 import type { Subscription, SubscriptionDisplay } from '../types'
 
 // Composables
@@ -101,8 +93,11 @@ const {
   createSubscription,
   updateSubscription,
   deleteSubscription,
+  deleteSubscriptionWithExpenses,
   updateSubscriptionWithFrequencyChange
 } = useSubscriptions()
+
+const { getSubscriptionExpenses } = useSubscriptionExpenses()
 
 const {
   mainCurrency,
@@ -131,6 +126,8 @@ const editingSubscription = ref<Subscription | null>(null)
 const showDeleteDialog = ref(false)
 const deletingSubscription = ref<Subscription | null>(null)
 const deleting = ref(false)
+const deletingExpenseCount = ref(0)
+const loadingExpenseCount = ref(false)
 
 /**
  * Convert subscriptions to display format with currency conversion
@@ -301,11 +298,26 @@ const handleUpdate = async (subscription: Subscription) => {
 /**
  * Handle delete request (show confirmation dialog)
  */
-const handleDeleteRequest = (id: string) => {
+const handleDeleteRequest = async (id: string) => {
   const subscription = subscriptions.value.find(s => s.id === id)
   if (subscription) {
     deletingSubscription.value = subscription
     showDeleteDialog.value = true
+    
+    // Load expense count for this subscription
+    loadingExpenseCount.value = true
+    deletingExpenseCount.value = 0
+    
+    try {
+      const expenses = await getSubscriptionExpenses(id)
+      deletingExpenseCount.value = expenses.length
+    } catch (error) {
+      console.error('Error loading subscription expenses:', error)
+      // Continue with deletion even if we can't load expense count
+      // User will see 0 expenses
+    } finally {
+      loadingExpenseCount.value = false
+    }
   }
 }
 
@@ -315,20 +327,25 @@ const handleDeleteRequest = (id: string) => {
 const cancelDelete = () => {
   showDeleteDialog.value = false
   deletingSubscription.value = null
+  deletingExpenseCount.value = 0
 }
 
 /**
  * Confirm delete
  */
-const confirmDelete = async () => {
+const confirmDelete = async (deleteExpenses: boolean) => {
   if (!deletingSubscription.value) return
 
   try {
     deleting.value = true
-    await deleteSubscription(deletingSubscription.value.id)
+    
+    // Use deleteSubscriptionWithExpenses to handle both subscription and expenses
+    await deleteSubscriptionWithExpenses(deletingSubscription.value.id, deleteExpenses)
+    
     showSuccess('订阅已删除')
     showDeleteDialog.value = false
     deletingSubscription.value = null
+    deletingExpenseCount.value = 0
   } catch (error) {
     console.error('Error deleting subscription:', error)
     showError(error instanceof Error ? error.message : '删除订阅失败')

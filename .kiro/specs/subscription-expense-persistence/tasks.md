@@ -222,7 +222,7 @@
     - Verify logs are being created correctly
     - _Requirements: 2.1, 2.2, 5.2_
 
-- [ ] 12. Implement audit trail for subscription changes
+- [x] 12. Implement audit trail for subscription changes
   - [x] 12.1 Add audit logging to subscription operations
     - Log subscription creation with initial values
     - Log subscription updates with old and new values
@@ -230,14 +230,14 @@
     - Store in subscription_audit_log table
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 12.2 Write unit tests for audit logging
+  - [x] 12.2 Write unit tests for audit logging
     - Test audit log creation on subscription create
     - Test audit log creation on subscription update
     - Test audit log creation on subscription delete
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
 - [ ] 13. Add subscription deletion with expense handling
-  - [ ] 13.1 Create deletion confirmation dialog
+  - [x] 13.1 Create deletion confirmation dialog
     - Show option to keep or delete linked expenses
     - Display count of linked expenses
     - Warn about consequences of each option

@@ -406,3 +406,23 @@ export interface TimezoneSettingsEmits {
   (e: 'save'): void
   (e: 'cancel'): void
 }
+
+/**
+ * Props for subscription delete dialog component
+ */
+export interface SubscriptionDeleteDialogProps {
+  modelValue: boolean
+  subscriptionName: string
+  expenseCount: number
+  loading: boolean
+  loadingExpenses: boolean
+}
+
+/**
+ * Emits for subscription delete dialog component
+ */
+export interface SubscriptionDeleteDialogEmits {
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'confirm', deleteExpenses: boolean): void
+  (e: 'cancel'): void
+}
