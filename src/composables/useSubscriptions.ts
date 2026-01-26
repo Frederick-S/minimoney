@@ -732,9 +732,11 @@ export function useSubscriptions() {
   /**
    * Delete subscription with option to delete linked expenses
    * Provides transaction-like behavior for cleanup
+   * Handles partial deletion failures gracefully
    * 
    * @param id - The subscription id to delete
    * @param deleteExpenses - Whether to delete linked expenses
+   * @throws Error if deletion fails with details about what succeeded/failed
    */
   const deleteSubscriptionWithExpenses = async (
     id: string,
@@ -746,22 +748,62 @@ export function useSubscriptions() {
 
     loading.value = true
 
+    let expensesDeleted = false
+    let subscriptionDeleted = false
+
     try {
       // Step 1: Delete linked expenses if requested
       if (deleteExpenses) {
         try {
           const { deleteSubscriptionExpenses } = useSubscriptionExpenses()
           await deleteSubscriptionExpenses(id)
+          expensesDeleted = true
+          console.log(`Successfully deleted expenses for subscription ${id}`)
         } catch (expenseError) {
           console.error('Error deleting subscription expenses:', expenseError)
-          throw new Error('删除关联支出记录失败')
+          
+          // Provide detailed error message
+          const errorMsg = expenseError instanceof Error 
+            ? expenseError.message 
+            : '删除关联支出记录失败'
+          
+          throw new Error(`删除关联支出记录失败: ${errorMsg}`)
         }
       }
 
       // Step 2: Delete the subscription
       // Note: If deleteExpenses is false, the expenses will remain with subscription_id
       // The database schema has ON DELETE SET NULL, so expenses won't be orphaned
-      await deleteSubscription(id)
+      try {
+        await deleteSubscription(id)
+        subscriptionDeleted = true
+        console.log(`Successfully deleted subscription ${id}`)
+      } catch (subscriptionError) {
+        console.error('Error deleting subscription:', subscriptionError)
+        
+        // If we already deleted expenses, we have a partial failure
+        if (expensesDeleted) {
+          const errorMsg = subscriptionError instanceof Error
+            ? subscriptionError.message
+            : '删除订阅失败'
+          
+          throw new Error(
+            `部分删除失败: 支出记录已删除，但订阅删除失败 (${errorMsg})。` +
+            `请重试删除订阅。`
+          )
+        } else {
+          // No expenses were deleted, so just throw the subscription error
+          const errorMsg = subscriptionError instanceof Error
+            ? subscriptionError.message
+            : '删除订阅失败'
+          
+          throw new Error(`删除订阅失败: ${errorMsg}`)
+        }
+      }
+    } catch (error) {
+      // Re-throw the error with context about what succeeded/failed
+      // This allows the UI to show appropriate error messages
+      throw error
     } finally {
       loading.value = false
     }

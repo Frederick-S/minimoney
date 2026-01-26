@@ -243,7 +243,7 @@
     - Warn about consequences of each option
     - _Requirements: 4.4_
 
-  - [ ] 13.2 Implement deletion logic
+  - [x] 13.2 Implement deletion logic
     - Delete subscription record
     - Optionally delete linked expenses based on user choice
     - Handle partial deletion failures
