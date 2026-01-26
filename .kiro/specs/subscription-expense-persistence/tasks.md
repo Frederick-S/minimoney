@@ -255,11 +255,11 @@
     - Test error handling
     - _Requirements: 4.4_
 
-- [ ] 14. Final checkpoint - Ensure all tests pass
+- [x] 14. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 15. Create deployment and monitoring documentation
-  - [ ] 15.1 Write deployment guide
+  - [x] 15.1 Write deployment guide
     - Document database migration steps
     - Document Edge Function deployment process
     - Document cron job setup
