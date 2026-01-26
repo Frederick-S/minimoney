@@ -266,7 +266,7 @@
     - Document environment variable configuration
     - _Requirements: All_
 
-  - [ ] 15.2 Write monitoring and troubleshooting guide
+  - [x] 15.2 Write monitoring and troubleshooting guide
     - Document how to access logs
     - Document monitoring queries
     - Document common issues and solutions
