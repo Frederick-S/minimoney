@@ -258,7 +258,7 @@
 - [x] 14. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 15. Create deployment and monitoring documentation
+- [x] 15. Create deployment and monitoring documentation
   - [x] 15.1 Write deployment guide
     - Document database migration steps
     - Document Edge Function deployment process
@@ -273,7 +273,7 @@
     - Document alerting setup
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 15.3 Create user documentation
+  - [x] 15.3 Create user documentation
     - Document how to create subscriptions with past bills
     - Document timezone preference setting
     - Document how to view subscription-linked expenses
