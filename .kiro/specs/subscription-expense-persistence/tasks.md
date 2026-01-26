@@ -236,7 +236,7 @@
     - Test audit log creation on subscription delete
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 13. Add subscription deletion with expense handling
+- [x] 13. Add subscription deletion with expense handling
   - [x] 13.1 Create deletion confirmation dialog
     - Show option to keep or delete linked expenses
     - Display count of linked expenses
@@ -249,7 +249,7 @@
     - Handle partial deletion failures
     - _Requirements: 4.4_
 
-  - [ ] 13.3 Write unit tests for deletion flow
+  - [x] 13.3 Write unit tests for deletion flow
     - Test deletion with expense retention
     - Test deletion with expense removal
     - Test error handling

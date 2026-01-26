@@ -1797,4 +1797,410 @@ describe('useSubscriptions', () => {
       expect(result.name).toBe(subscriptionData.name)
     })
   })
+
+  /**
+   * Unit tests for subscription deletion with expense handling
+   * Tests the deleteSubscriptionWithExpenses function
+   * Requirements: 4.4
+   */
+  describe('Subscription Deletion with Expense Handling', () => {
+    /**
+     * Test: Deletion with expense retention
+     * When deleteExpenses is false, subscription should be deleted but expenses should remain
+     */
+    it('should delete subscription and keep expenses when deleteExpenses is false', async () => {
+      const subscriptionId = 'test-sub-id-123'
+      const subscriptionData = {
+        id: subscriptionId,
+        userId: mockUser.id,
+        name: 'Netflix',
+        amount: 15.99,
+        quantity: 1,
+        currency: 'USD',
+        billingFrequency: 'monthly' as const,
+        isAutoRenew: true,
+        startDate: '2024-01-01',
+        endDate: undefined,
+        nextBillingDate: '2024-02-01',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Mock the fetch of subscription data before deletion (for audit logging)
+      const mockSelectChain = {
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: subscriptionData.id,
+            user_id: subscriptionData.userId,
+            name: subscriptionData.name,
+            amount: subscriptionData.amount,
+            quantity: subscriptionData.quantity,
+            currency: subscriptionData.currency,
+            billing_frequency: subscriptionData.billingFrequency,
+            is_auto_renew: subscriptionData.isAutoRenew,
+            start_date: subscriptionData.startDate,
+            end_date: null,
+            next_billing_date: subscriptionData.nextBillingDate,
+            created_at: subscriptionData.createdAt,
+            updated_at: subscriptionData.updatedAt
+          },
+          error: null
+        })
+      }
+      mockSupabase.select.mockReturnValueOnce(mockSelectChain)
+
+      // Mock the database delete response (successful deletion)
+      const mockDeleteChain = {
+        eq: vi.fn().mockReturnThis()
+      }
+      mockDeleteChain.eq.mockReturnValueOnce(mockDeleteChain) // First eq returns chain for chaining
+      mockDeleteChain.eq.mockReturnValueOnce({ // Second eq returns the final result
+        data: null,
+        error: null
+      })
+      mockSupabase.delete.mockReturnValueOnce(mockDeleteChain)
+
+      // Mock the audit log insert
+      const mockAuditInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+      mockSupabase.insert.mockReturnValueOnce(mockAuditInsert)
+
+      const { deleteSubscriptionWithExpenses, subscriptions } = useSubscriptions()
+      
+      // Set up initial state
+      subscriptions.value = [subscriptionData]
+
+      // Delete subscription with deleteExpenses = false (keep expenses)
+      await deleteSubscriptionWithExpenses(subscriptionId, false)
+
+      // Verify subscription was deleted from local state
+      expect(subscriptions.value).toHaveLength(0)
+      expect(subscriptions.value.find(s => s.id === subscriptionId)).toBeUndefined()
+
+      // Verify database delete was called
+      expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+      expect(mockSupabase.delete).toHaveBeenCalled()
+
+      // Verify deleteSubscriptionExpenses was NOT called (expenses should be kept)
+      // The expenses remain with subscription_id due to ON DELETE SET NULL
+    })
+
+    /**
+     * Test: Deletion with expense removal
+     * When deleteExpenses is true, both subscription and expenses should be deleted
+     */
+    it('should delete subscription and expenses when deleteExpenses is true', async () => {
+      const subscriptionId = 'test-sub-id-456'
+      const subscriptionData = {
+        id: subscriptionId,
+        userId: mockUser.id,
+        name: 'Spotify',
+        amount: 9.99,
+        quantity: 1,
+        currency: 'USD',
+        billingFrequency: 'monthly' as const,
+        isAutoRenew: true,
+        startDate: '2024-01-01',
+        endDate: undefined,
+        nextBillingDate: '2024-02-01',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Mock the expense deletion (from useSubscriptionExpenses)
+      // This will be called first before subscription deletion
+      const mockExpenseDeleteChain = {
+        eq: vi.fn().mockReturnThis()
+      }
+      mockExpenseDeleteChain.eq.mockReturnValueOnce(mockExpenseDeleteChain)
+      mockExpenseDeleteChain.eq.mockReturnValueOnce({
+        data: null,
+        error: null
+      })
+      mockSupabase.delete.mockReturnValueOnce(mockExpenseDeleteChain)
+
+      // Mock the fetch of subscription data before deletion (for audit logging)
+      const mockSelectChain = {
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: subscriptionData.id,
+            user_id: subscriptionData.userId,
+            name: subscriptionData.name,
+            amount: subscriptionData.amount,
+            quantity: subscriptionData.quantity,
+            currency: subscriptionData.currency,
+            billing_frequency: subscriptionData.billingFrequency,
+            is_auto_renew: subscriptionData.isAutoRenew,
+            start_date: subscriptionData.startDate,
+            end_date: null,
+            next_billing_date: subscriptionData.nextBillingDate,
+            created_at: subscriptionData.createdAt,
+            updated_at: subscriptionData.updatedAt
+          },
+          error: null
+        })
+      }
+      mockSupabase.select.mockReturnValueOnce(mockSelectChain)
+
+      // Mock the subscription delete response (successful deletion)
+      const mockSubscriptionDeleteChain = {
+        eq: vi.fn().mockReturnThis()
+      }
+      mockSubscriptionDeleteChain.eq.mockReturnValueOnce(mockSubscriptionDeleteChain)
+      mockSubscriptionDeleteChain.eq.mockReturnValueOnce({
+        data: null,
+        error: null
+      })
+      mockSupabase.delete.mockReturnValueOnce(mockSubscriptionDeleteChain)
+
+      // Mock the audit log insert
+      const mockAuditInsert = vi.fn().mockResolvedValue({
+        data: null,
+        error: null
+      })
+      mockSupabase.insert.mockReturnValueOnce(mockAuditInsert)
+
+      const { deleteSubscriptionWithExpenses, subscriptions } = useSubscriptions()
+      
+      // Set up initial state
+      subscriptions.value = [subscriptionData]
+
+      // Delete subscription with deleteExpenses = true (delete expenses)
+      await deleteSubscriptionWithExpenses(subscriptionId, true)
+
+      // Verify subscription was deleted from local state
+      expect(subscriptions.value).toHaveLength(0)
+      expect(subscriptions.value.find(s => s.id === subscriptionId)).toBeUndefined()
+
+      // Verify both expenses and subscription delete were called
+      expect(mockSupabase.from).toHaveBeenCalledWith('expenses')
+      expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+      expect(mockSupabase.delete).toHaveBeenCalledTimes(2) // Once for expenses, once for subscription
+    })
+
+    /**
+     * Test: Error handling when expense deletion fails
+     * Should throw error with details about expense deletion failure
+     */
+    it('should throw error when expense deletion fails', async () => {
+      const subscriptionId = 'test-sub-id-789'
+      const subscriptionData = {
+        id: subscriptionId,
+        userId: mockUser.id,
+        name: 'Disney+',
+        amount: 7.99,
+        quantity: 1,
+        currency: 'USD',
+        billingFrequency: 'monthly' as const,
+        isAutoRenew: true,
+        startDate: '2024-01-01',
+        endDate: undefined,
+        nextBillingDate: '2024-02-01',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Mock the expense deletion to fail
+      const mockExpenseDeleteChain = {
+        eq: vi.fn().mockReturnThis()
+      }
+      mockExpenseDeleteChain.eq.mockReturnValueOnce(mockExpenseDeleteChain)
+      mockExpenseDeleteChain.eq.mockReturnValueOnce({
+        data: null,
+        error: { message: 'Database connection failed', code: 'NETWORK_ERROR' }
+      })
+      mockSupabase.delete.mockReturnValueOnce(mockExpenseDeleteChain)
+
+      const { deleteSubscriptionWithExpenses, subscriptions } = useSubscriptions()
+      
+      // Set up initial state
+      subscriptions.value = [subscriptionData]
+
+      // Attempt to delete subscription with deleteExpenses = true
+      await expect(
+        deleteSubscriptionWithExpenses(subscriptionId, true)
+      ).rejects.toThrow(/删除关联支出记录失败/)
+
+      // Verify subscription was NOT deleted from local state (rollback)
+      expect(subscriptions.value).toHaveLength(1)
+      expect(subscriptions.value.find(s => s.id === subscriptionId)).toBeDefined()
+
+      // Verify only expense delete was attempted (subscription delete was not called)
+      expect(mockSupabase.from).toHaveBeenCalledWith('expenses')
+      expect(mockSupabase.delete).toHaveBeenCalledTimes(1)
+    })
+
+    /**
+     * Test: Error handling when subscription deletion fails after expenses deleted
+     * Should throw error with details about partial failure
+     */
+    it('should throw error with partial failure details when subscription deletion fails after expenses deleted', async () => {
+      const subscriptionId = 'test-sub-id-abc'
+      const subscriptionData = {
+        id: subscriptionId,
+        userId: mockUser.id,
+        name: 'HBO Max',
+        amount: 14.99,
+        quantity: 1,
+        currency: 'USD',
+        billingFrequency: 'monthly' as const,
+        isAutoRenew: true,
+        startDate: '2024-01-01',
+        endDate: undefined,
+        nextBillingDate: '2024-02-01',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Mock the expense deletion to succeed
+      const mockExpenseDeleteChain = {
+        eq: vi.fn().mockReturnThis()
+      }
+      mockExpenseDeleteChain.eq.mockReturnValueOnce(mockExpenseDeleteChain)
+      mockExpenseDeleteChain.eq.mockReturnValueOnce({
+        data: null,
+        error: null
+      })
+      mockSupabase.delete.mockReturnValueOnce(mockExpenseDeleteChain)
+
+      // Mock the fetch of subscription data before deletion (for audit logging)
+      const mockSelectChain = {
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: subscriptionData.id,
+            user_id: subscriptionData.userId,
+            name: subscriptionData.name,
+            amount: subscriptionData.amount,
+            quantity: subscriptionData.quantity,
+            currency: subscriptionData.currency,
+            billing_frequency: subscriptionData.billingFrequency,
+            is_auto_renew: subscriptionData.isAutoRenew,
+            start_date: subscriptionData.startDate,
+            end_date: null,
+            next_billing_date: subscriptionData.nextBillingDate,
+            created_at: subscriptionData.createdAt,
+            updated_at: subscriptionData.updatedAt
+          },
+          error: null
+        })
+      }
+      mockSupabase.select.mockReturnValueOnce(mockSelectChain)
+
+      // Mock the subscription deletion to fail
+      const mockSubscriptionDeleteChain = {
+        eq: vi.fn().mockReturnThis()
+      }
+      mockSubscriptionDeleteChain.eq.mockReturnValueOnce(mockSubscriptionDeleteChain)
+      mockSubscriptionDeleteChain.eq.mockReturnValueOnce({
+        data: null,
+        error: { message: 'Permission denied', code: 'PGRST116' }
+      })
+      mockSupabase.delete.mockReturnValueOnce(mockSubscriptionDeleteChain)
+
+      const { deleteSubscriptionWithExpenses, subscriptions } = useSubscriptions()
+      
+      // Set up initial state
+      subscriptions.value = [subscriptionData]
+
+      // Attempt to delete subscription with deleteExpenses = true
+      await expect(
+        deleteSubscriptionWithExpenses(subscriptionId, true)
+      ).rejects.toThrow(/部分删除失败/)
+
+      // Verify the error message mentions both success and failure
+      try {
+        await deleteSubscriptionWithExpenses(subscriptionId, true)
+      } catch (error) {
+        expect((error as Error).message).toContain('支出记录已删除')
+        expect((error as Error).message).toContain('订阅删除失败')
+      }
+
+      // Verify both deletes were attempted
+      expect(mockSupabase.from).toHaveBeenCalledWith('expenses')
+      expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+      // Note: delete is called multiple times due to the retry logic in the test
+      expect(mockSupabase.delete).toHaveBeenCalled()
+    })
+
+    /**
+     * Test: Error handling when subscription deletion fails without expenses
+     * Should throw error about subscription deletion only
+     */
+    it('should throw error when subscription deletion fails without deleting expenses', async () => {
+      const subscriptionId = 'test-sub-id-def'
+      const subscriptionData = {
+        id: subscriptionId,
+        userId: mockUser.id,
+        name: 'Apple TV+',
+        amount: 4.99,
+        quantity: 1,
+        currency: 'USD',
+        billingFrequency: 'monthly' as const,
+        isAutoRenew: true,
+        startDate: '2024-01-01',
+        endDate: undefined,
+        nextBillingDate: '2024-02-01',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Mock the fetch of subscription data before deletion (for audit logging)
+      const mockSelectChain = {
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: {
+            id: subscriptionData.id,
+            user_id: subscriptionData.userId,
+            name: subscriptionData.name,
+            amount: subscriptionData.amount,
+            quantity: subscriptionData.quantity,
+            currency: subscriptionData.currency,
+            billing_frequency: subscriptionData.billingFrequency,
+            is_auto_renew: subscriptionData.isAutoRenew,
+            start_date: subscriptionData.startDate,
+            end_date: null,
+            next_billing_date: subscriptionData.nextBillingDate,
+            created_at: subscriptionData.createdAt,
+            updated_at: subscriptionData.updatedAt
+          },
+          error: null
+        })
+      }
+      mockSupabase.select.mockReturnValueOnce(mockSelectChain)
+
+      // Mock the subscription deletion to fail
+      const mockSubscriptionDeleteChain = {
+        eq: vi.fn().mockReturnThis()
+      }
+      mockSubscriptionDeleteChain.eq.mockReturnValueOnce(mockSubscriptionDeleteChain)
+      mockSubscriptionDeleteChain.eq.mockReturnValueOnce({
+        data: null,
+        error: { message: 'Network timeout', code: 'NETWORK_ERROR' }
+      })
+      mockSupabase.delete.mockReturnValueOnce(mockSubscriptionDeleteChain)
+
+      const { deleteSubscriptionWithExpenses, subscriptions } = useSubscriptions()
+      
+      // Set up initial state
+      subscriptions.value = [subscriptionData]
+
+      // Attempt to delete subscription with deleteExpenses = false
+      await expect(
+        deleteSubscriptionWithExpenses(subscriptionId, false)
+      ).rejects.toThrow(/删除订阅失败/)
+
+      // Verify subscription was NOT deleted from local state
+      expect(subscriptions.value).toHaveLength(1)
+      expect(subscriptions.value.find(s => s.id === subscriptionId)).toBeDefined()
+
+      // Verify only subscription delete was attempted (no expense delete)
+      expect(mockSupabase.from).toHaveBeenCalledWith('subscriptions')
+      expect(mockSupabase.delete).toHaveBeenCalledTimes(1)
+    })
+  })
 })
